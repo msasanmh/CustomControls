@@ -10,14 +10,14 @@ namespace CustomControls
             // Set MessageBox Colors
             CustomMessageBox.BackColor = Color.DimGray;
             CustomMessageBox.ForeColor = Color.LightBlue;
-            CustomMessageBox.BorderColor = Color.Red;
+            CustomMessageBox.BorderColor = Color.DodgerBlue;
 
             // Add VScrollBar to DataGridView
             CustomVScrollBar vsb = new();
             // Set Colors
             vsb.BackColor = Color.DimGray;
             vsb.ForeColor = Color.LightBlue;
-            vsb.BorderColor = Color.Red;
+            vsb.BorderColor = Color.DodgerBlue;
             customDataGridView1.AddVScrollBar(vsb);
 
         }
@@ -53,6 +53,30 @@ namespace CustomControls
             {
                 customProgressBar1.Value = n;
                 customProgressBar1.CustomText = "Working on " + n;
+            }
+        }
+
+        private void customButton6_Click(object sender, EventArgs e)
+        {
+            // InputBox
+            // Set Colors
+            CustomInputBox.BackColor = Color.DimGray;
+            CustomInputBox.ForeColor = Color.LightBlue;
+            CustomInputBox.BorderColor = Color.DodgerBlue;
+
+
+            string inputName = string.Empty;
+            switch (CustomInputBox.Show(ref inputName, "New Group Name:", false, "Create group"))
+            {
+                case DialogResult.OK:
+                    {
+                        customTextBox1.Texts = inputName;
+                    }
+                    break;
+                case DialogResult.Cancel:
+                    return;
+                default:
+                    return;
             }
         }
     }

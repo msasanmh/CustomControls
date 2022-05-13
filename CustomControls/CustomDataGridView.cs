@@ -126,6 +126,22 @@ namespace CustomControls
             }
         }
 
+        private bool mSelectionModeFocus = false;
+        [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
+        [Category("Behavior"), Description("Set Focus On Full Row\nWorks on SelectionMode = FullRowSelect")]
+        public bool SelectionModeFocus
+        {
+            get { return mSelectionModeFocus; }
+            set
+            {
+                if (mSelectionModeFocus != value)
+                {
+                    mSelectionModeFocus = value;
+                    Invalidate();
+                }
+            }
+        }
+
         private static Color[]? OriginalColors;
         private static Color BackColorDarker { get; set; }
         private static Color SelectionUnfocused { get; set; }
@@ -170,6 +186,8 @@ namespace CustomControls
             CellPainting += DataGridView_CellPainting;
             Paint += DataGridView_Paint;
             EditingControlShowing += CustomDataGridView_EditingControlShowing;
+
+            KeyDown += CustomDataGridView_KeyDown;
         }
 
         private void Application_Idle(object? sender, EventArgs e)
@@ -704,6 +722,55 @@ namespace CustomControls
             //    if (checkBox.CheckState == CheckState.Indeterminate)
 
             //}
+        }
+
+        private void CustomDataGridView_KeyDown(object? sender, KeyEventArgs e)
+        {
+            var dgv = sender as DataGridView;
+            if (SelectionModeFocus && SelectionMode == DataGridViewSelectionMode.FullRowSelect)
+            {
+                if (dgv.Rows.Count == 0) return;
+                int currentRow = dgv.CurrentCell.RowIndex;
+
+                if (e.KeyCode == Keys.Tab)
+                {
+                    if (currentRow + 1 < dgv.Rows.Count && dgv.Rows[currentRow].Cells.Count > 0)
+                    {
+                        e.SuppressKeyPress = true;
+
+                        currentRow++;
+                        dgv.Rows[currentRow].Cells[0].Selected = true;
+                        dgv.Rows[currentRow].Selected = true;
+                    }
+                    else
+                    {
+                        Control ctl;
+                        ctl = (Control)sender;
+                        ctl.SelectNextControl(GetNextControl(ctl, true), true, false, true, true);
+                    }
+                }
+
+                if (e.KeyCode == Keys.Space || e.KeyCode == Keys.Right || e.KeyCode == Keys.Left)
+                {
+                    if (dgv.Rows[currentRow].Cells.Count > 0)
+                    {
+                        e.SuppressKeyPress = true;
+                        int cellN = 0;
+                        for (int n = 0; n < dgv.Rows[currentRow].Cells.Count; n++)
+                        {
+                            var cell = dgv.Rows[currentRow].Cells[n];
+                            if (cell.GetType().ToString().Contains("CheckBox", StringComparison.OrdinalIgnoreCase))
+                            {
+                                cellN = n;
+                                cell.Selected = true;
+                                dgv.Rows[currentRow].Selected = true;
+                            }
+                        }
+                        dgv.Rows[currentRow].Cells[cellN].Selected = true;
+                        dgv.Rows[currentRow].Selected = true;
+                    }
+                }
+            }
         }
 
     }

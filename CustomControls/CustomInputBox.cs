@@ -1,15 +1,18 @@
 ﻿using MsmhTools;
 using System.Runtime.InteropServices;
 /*
- * Copyright MSasanMH, April 14, 2022.
+ * Copyright MSasanMH, May 13, 2022.
  * Needs CustomButton.
  */
 
 namespace CustomControls
 {
-    public class CustomMessageBox : Form
+    public class CustomInputBox : Form
     {
-        // Make CustomMessageBox movable.
+        [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)]
+        private extern static int SetWindowTheme(IntPtr hWnd, string pszSubAppName, string pszSubIdList);
+
+        // Make CustomInputBox movable.
         private const int WM_NCLBUTTONDOWN = 0xA1;
         private const int HT_CAPTION = 0x2;
         [DllImport("user32.dll")]
@@ -17,10 +20,12 @@ namespace CustomControls
         [DllImport("user32.dll")]
         private static extern bool ReleaseCapture();
 
+        static CustomTextBox inputTextBox = new();
         static DialogResult dialogResult;
         public new static Color BackColor { get; set; }
         public new static Color ForeColor { get; set; }
         public static Color BorderColor { get; set; }
+
         private static int ImageBox(int iconOffset, Icon icon, Panel textPanel)
         {
             PictureBox pb = new();
@@ -30,8 +35,16 @@ namespace CustomControls
             textPanel.Controls.Add(pb);
             return pb.Height;
         }
-        public CustomMessageBox(string text, string? caption, MessageBoxButtons? buttons, MessageBoxIcon? icon) : base()
+
+        public CustomInputBox(ref string input, string text, bool multiline, string? caption, MessageBoxIcon? icon, int? addWidth, int? addHeight) : base()
         {
+            MessageBoxButtons buttons = MessageBoxButtons.OKCancel;
+
+            if (addWidth == null)
+                addWidth = 0;
+            if (addHeight == null)
+                addHeight = 0;
+
             FormBorderStyle = FormBorderStyle.None;
             ShowInTaskbar = false;
             StartPosition = FormStartPosition.CenterParent;
@@ -54,7 +67,7 @@ namespace CustomControls
                 testLabelOffset = iconWidth - iconOffset * 2;
             }
             int buttonWidth = 75;
-            if (buttons == null || buttons == MessageBoxButtons.OK)
+            if (buttons == MessageBoxButtons.OK)
             {
                 int previousWidth = mWidth;
                 mWidth = buttonWidth + buttonOffset * 2;
@@ -87,35 +100,56 @@ namespace CustomControls
             testLabel.TextAlign = ContentAlignment.MiddleLeft;
             testLabel.Text = text;
             Size testLabelSize = testLabel.GetPreferredSize(Size.Empty);
-            int mHeight = testLabelSize.Height + 100;
+            int iconHeight;
+            if (icon == null || icon == MessageBoxIcon.None)
+                iconHeight = 0;
+            else
+                iconHeight = 32;
+            int mHeight;
+            if (multiline)
+                mHeight = testLabelSize.Height * 5 + 100 + iconHeight;
+            else
+                mHeight = testLabelSize.Height * 3 / 2 + 110;
             mHeight = Math.Max(minHeight, mHeight);
             if (mHeight > maxHeight)
             {
                 mWidth += maxWidth;
                 testLabel.MaximumSize = new Size(mWidth - 2 - testLabelOffset, 0);
                 testLabelSize = testLabel.GetPreferredSize(Size.Empty);
-                mHeight = testLabelSize.Height + 100;
+                if (multiline)
+                    mHeight = testLabelSize.Height * 5 + 100 + iconHeight;
+                else
+                    mHeight = testLabelSize.Height * 3 / 2 + 110;
                 mHeight = Math.Max(minHeight, mHeight);
                 if (mHeight > maxHeight)
                 {
                     mWidth += maxWidth;
                     testLabel.MaximumSize = new Size(mWidth - 2 - testLabelOffset, 0);
                     testLabelSize = testLabel.GetPreferredSize(Size.Empty);
-                    mHeight = testLabelSize.Height + 100;
+                    if (multiline)
+                        mHeight = testLabelSize.Height * 5 + 100 + iconHeight;
+                    else
+                        mHeight = testLabelSize.Height * 3 / 2 + 110;
                     mHeight = Math.Max(minHeight, mHeight);
                     if (mHeight > maxHeight)
                     {
                         mWidth += maxWidth;
                         testLabel.MaximumSize = new Size(mWidth - 2 - testLabelOffset, 0);
                         testLabelSize = testLabel.GetPreferredSize(Size.Empty);
-                        mHeight = testLabelSize.Height + 100;
+                        if (multiline)
+                            mHeight = testLabelSize.Height * 5 + 100 + iconHeight;
+                        else
+                            mHeight = testLabelSize.Height * 3 / 2 + 110;
                         mHeight = Math.Max(minHeight, mHeight);
                         if (mHeight > maxHeight)
                         {
                             mWidth += maxWidth;
                             testLabel.MaximumSize = new Size(mWidth - 2 - testLabelOffset, 0);
                             testLabelSize = testLabel.GetPreferredSize(Size.Empty);
-                            mHeight = testLabelSize.Height + 100;
+                            if (multiline)
+                                mHeight = testLabelSize.Height * 5 + 100 + iconHeight;
+                            else
+                                mHeight = testLabelSize.Height * 3 / 2 + 110;
                             mHeight = Math.Max(minHeight, mHeight);
                             if (mWidth > screen.Width)
                             {
@@ -126,7 +160,7 @@ namespace CustomControls
                     }
                 }
             }
-            Size = new(mWidth, mHeight);
+            Size = new(mWidth + (int)addWidth, mHeight + (int)addHeight);
 
             // Rectangle
             Rectangle rect = new(ClientRectangle.X + 1, ClientRectangle.Y + 1, ClientRectangle.Width - 2, ClientRectangle.Height - 2);
@@ -149,16 +183,43 @@ namespace CustomControls
                 Controls.Add(titleLabel);
             }
 
-            // Text Body
+            // Text Body Panel
             Panel textPanel = new();
             textPanel.BackColor = BackColor;
             textPanel.ForeColor = ForeColor;
             textPanel.BorderStyle = BorderStyle.None;
             textPanel.Margin = new Padding(0);
             textPanel.Location = new(rect.X, titlePanelHeight);
-            textPanel.Size = new(rect.Width, rect.Height - titlePanelHeight - buttonPanelHeight);
+            if (multiline)
+            {
+                if (icon == null || icon == MessageBoxIcon.None)
+                    textPanel.Size = new(rect.Width, (rect.Height - titlePanelHeight - buttonPanelHeight) / 5);
+                else
+                    textPanel.Size = new(rect.Width, (rect.Height - titlePanelHeight - buttonPanelHeight) / 4);
+            }
+            else
+                textPanel.Size = new(rect.Width, (rect.Height - titlePanelHeight - buttonPanelHeight) * 2 / 3);
             textPanel.Anchor = AnchorStyles.Left | AnchorStyles.Top | AnchorStyles.Right | AnchorStyles.Bottom;
             Controls.Add(textPanel);
+
+            // Input Panel
+            Panel inputPanel = new();
+            inputPanel.BackColor = BackColor;
+            inputPanel.ForeColor = ForeColor;
+            inputPanel.BorderStyle = BorderStyle.None;
+            inputPanel.Margin = new Padding(0);
+            inputPanel.Location = new(rect.X, titlePanelHeight + textPanel.Height);
+            if (multiline)
+            {
+                if (icon == null || icon == MessageBoxIcon.None)
+                    inputPanel.Size = new(rect.Width, (rect.Height - titlePanelHeight - buttonPanelHeight) * 4 / 5);
+                else
+                    inputPanel.Size = new(rect.Width, (rect.Height - titlePanelHeight - buttonPanelHeight) * 3 / 4);
+            }
+            else
+                inputPanel.Size = new(rect.Width, (rect.Height - titlePanelHeight - buttonPanelHeight) / 3);
+            inputPanel.Anchor = AnchorStyles.Left | AnchorStyles.Top | AnchorStyles.Right | AnchorStyles.Bottom;
+            Controls.Add(inputPanel);
 
             // Enum MessageBoxIcon
             if (icon != null)
@@ -218,6 +279,7 @@ namespace CustomControls
                 }
             }
 
+            // Text Body Label
             Label textLabel = new();
             textLabel.AutoSize = true;
             textLabel.MaximumSize = new Size(rect.Width - iconOffset, 0);
@@ -226,6 +288,26 @@ namespace CustomControls
             Size textLabelSize = textLabel.GetPreferredSize(Size.Empty);
             textLabel.Location = new(iconOffset, textPanel.Height / 2 - textLabelSize.Height / 2);
             textPanel.Controls.Add(textLabel);
+
+            // Input Label
+            inputTextBox = new();
+            inputTextBox.Text = input;
+            if (multiline == false)
+            {
+                inputTextBox.Size = new Size(rect.Width - (5 * 2), inputTextBox.Height);
+                inputTextBox.MaximumSize = new Size(rect.Width - (5 * 2), 0);
+                Size inputLabelSize = inputTextBox.GetPreferredSize(Size.Empty);
+                inputTextBox.Location = new(5, inputPanel.Height / 2 - inputLabelSize.Height / 2);
+            }
+            else
+            {
+                inputTextBox.Multiline = true;
+                inputTextBox.ScrollBars = ScrollBars.Vertical;
+                inputTextBox.Size = new Size(rect.Width - (5 * 2), inputPanel.Height);
+                inputTextBox.MaximumSize = new Size(rect.Width - (5 * 2), inputPanel.Height);
+                inputTextBox.Location = new(5, 0);
+            }
+            inputPanel.Controls.Add(inputTextBox);
 
             // Button
             Panel buttonPanel = new();
@@ -239,8 +321,6 @@ namespace CustomControls
             Controls.Add(buttonPanel);
 
             // Enum DialogResult
-            if (buttons == null)
-                buttons = MessageBoxButtons.OK;
             if (buttons == MessageBoxButtons.AbortRetryIgnore)
             {
                 CustomButton btn1 = new();
@@ -274,8 +354,11 @@ namespace CustomControls
                 };
                 buttonPanel.Controls.Add(btn3);
 
-                AcceptButton = btn2;
-                CancelButton = btn1;
+                if (multiline == false)
+                {
+                    AcceptButton = btn2;
+                    CancelButton = btn1;
+                }
             }
             else if (buttons == MessageBoxButtons.CancelTryContinue)
             {
@@ -310,8 +393,11 @@ namespace CustomControls
                 };
                 buttonPanel.Controls.Add(btn3);
 
-                AcceptButton = btn2;
-                CancelButton = btn1;
+                if (multiline == false)
+                {
+                    AcceptButton = btn2;
+                    CancelButton = btn1; 
+                }
             }
             else if (buttons == MessageBoxButtons.OK)
             {
@@ -326,7 +412,10 @@ namespace CustomControls
                 };
                 buttonPanel.Controls.Add(btn1);
 
-                AcceptButton = btn1;
+                if (multiline == false)
+                {
+                    AcceptButton = btn1; 
+                }
             }
             else if (buttons == MessageBoxButtons.OKCancel)
             {
@@ -351,8 +440,11 @@ namespace CustomControls
                 };
                 buttonPanel.Controls.Add(btn2);
 
-                AcceptButton = btn1;
-                CancelButton = btn2;
+                if (multiline == false)
+                {
+                    AcceptButton = btn1;
+                    CancelButton = btn2;
+                }
             }
             else if (buttons == MessageBoxButtons.RetryCancel)
             {
@@ -377,8 +469,11 @@ namespace CustomControls
                 };
                 buttonPanel.Controls.Add(btn2);
 
-                AcceptButton = btn1;
-                CancelButton = btn2;
+                if (multiline == false)
+                {
+                    AcceptButton = btn1;
+                    CancelButton = btn2;
+                }
             }
             else if (buttons == MessageBoxButtons.YesNo)
             {
@@ -403,8 +498,11 @@ namespace CustomControls
                 };
                 buttonPanel.Controls.Add(btn2);
 
-                AcceptButton = btn1;
-                CancelButton = btn2;
+                if (multiline == false)
+                {
+                    AcceptButton = btn1;
+                    CancelButton = btn2;
+                }
             }
             else if (buttons == MessageBoxButtons.YesNoCancel)
             {
@@ -439,14 +537,33 @@ namespace CustomControls
                 };
                 buttonPanel.Controls.Add(btn3);
 
-                AcceptButton = btn1;
-                CancelButton = btn3;
+                if (multiline == false)
+                {
+                    AcceptButton = btn1;
+                    CancelButton = btn3;
+                }
             }
 
-            // Set CustomButton Colors
+            // Set CustomTextBox and CustomButton Colors
             var cs = Tools.Controllers.GetAllControls(this);
             foreach (Control c in cs)
-                if (c is CustomButton customButton)
+            {
+                if (c is CustomTextBox customTextBox)
+                {
+                    if (BackColor.DarkOrLight() == "Dark")
+                    {
+                        _ = SetWindowTheme(customTextBox.Handle, "DarkMode_Explorer", null);
+                        foreach (Control ctb in customTextBox.Controls)
+                        {
+                            _ = SetWindowTheme(ctb.Handle, "DarkMode_Explorer", null);
+                        }
+                    }
+                    customTextBox.BackColor = BackColor;
+                    customTextBox.ForeColor = ForeColor;
+                    customTextBox.BorderColor = BorderColor;
+                    customTextBox.Invalidate();
+                }
+                else if (c is CustomButton customButton)
                 {
                     customButton.BackColor = BackColor;
                     customButton.ForeColor = ForeColor;
@@ -454,63 +571,168 @@ namespace CustomControls
                     customButton.SelectionColor = BorderColor;
                     customButton.Invalidate();
                 }
+            }
         }
 
-        /// <summary>Displays a message box with specified text.</summary>
+        /// <summary>Displays a prompt in a dialog box, waits for the user to input text or click a button.</summary>
         ///
-        /// <param name="text">The text to display in the message box.</param>
+        /// <param name="input">Update a String containing the contents of the text box.</param>
+        /// <param name="text">The text to display in the input box.</param>
+        /// <param name="multiline">TextBox multiline.</param>
         ///
         /// <returns>One of the System.Windows.Forms.DialogResult values.</returns>
-        public static DialogResult Show(string text)
+        public static DialogResult Show(ref string input, string text, bool multiline)
         {
             // using construct ensures the resources are freed when form is closed.
-            using CustomMessageBox form = new(text, null, null, null);
+            using CustomInputBox form = new(ref input, text, multiline, null, null, null, null);
             form.ShowDialog();
+            input = inputTextBox.Texts;
             return dialogResult;
         }
 
-        /// <summary>Displays a message box with specified text.</summary>
+        /// <summary>Displays a prompt in a dialog box, waits for the user to input text or click a button.</summary>
         ///
-        /// <param name="text">The text to display in the message box.</param>
-        /// <param name="caption">The text to display in the title bar of the message box.</param>
+        /// <param name="input">Update a String containing the contents of the text box.</param>
+        /// <param name="text">The text to display in the input box.</param>
+        /// <param name="multiline">TextBox multiline.</param>
+        /// <param name="addWidth">Add amount to width.</param>
         ///
         /// <returns>One of the System.Windows.Forms.DialogResult values.</returns>
-        public static DialogResult Show(string text, string caption)
+        public static DialogResult Show(ref string input, string text, bool multiline, int addWidth)
         {
             // using construct ensures the resources are freed when form is closed.
-            using CustomMessageBox form = new(text, caption, null, null);
+            using CustomInputBox form = new(ref input, text, multiline, null, null, addWidth, null);
             form.ShowDialog();
+            input = inputTextBox.Texts;
             return dialogResult;
         }
 
-        /// <summary>Displays a message box with specified text.</summary>
+        /// <summary>Displays a prompt in a dialog box, waits for the user to input text or click a button.</summary>
         ///
-        /// <param name="text">The text to display in the message box.</param>
-        /// <param name="caption">The text to display in the title bar of the message box.</param>
-        /// <param name="buttons">One of the System.Windows.Forms.MessageBoxButtons values that specifies which buttons to display in the message box.</param>
+        /// <param name="input">Update a String containing the contents of the text box.</param>
+        /// <param name="text">The text to display in the input box.</param>
+        /// <param name="multiline">TextBox multiline.</param>
+        /// <param name="addWidth">Add amount to width.</param>
+        /// <param name="addHeight">Add amount to height.</param>
         ///
         /// <returns>One of the System.Windows.Forms.DialogResult values.</returns>
-        public static DialogResult Show(string text, string caption, MessageBoxButtons buttons)
+        public static DialogResult Show(ref string input, string text, bool multiline, int addWidth, int addHeight)
         {
             // using construct ensures the resources are freed when form is closed.
-            using CustomMessageBox form = new(text, caption, buttons, null);
+            using CustomInputBox form = new(ref input, text, multiline, null, null, addWidth, addHeight);
             form.ShowDialog();
+            input = inputTextBox.Texts;
             return dialogResult;
         }
 
-        /// <summary>Displays a message box with specified text.</summary>
+        /// <summary>Displays a prompt in a dialog box, waits for the user to input text or click a button.</summary>
         ///
-        /// <param name="text">The text to display in the message box.</param>
-        /// <param name="caption">The text to display in the title bar of the message box.</param>
-        /// <param name="buttons">One of the System.Windows.Forms.MessageBoxButtons values that specifies which buttons to display in the message box.</param>
-        /// <param name="icon">One of the System.Windows.Forms.MessageBoxIcon values that specifies which icon to display in the message box.</param>
+        /// <param name="input">Update a String containing the contents of the text box.</param>
+        /// <param name="text">The text to display in the input box.</param>
+        /// <param name="multiline">TextBox multiline.</param>
+        /// <param name="caption">The text to display in the title bar of the input box.</param>
         ///
         /// <returns>One of the System.Windows.Forms.DialogResult values.</returns>
-        public static DialogResult Show(string text, string caption, MessageBoxButtons buttons, MessageBoxIcon icon)
+        public static DialogResult Show(ref string input, string text, bool multiline, string caption)
         {
             // using construct ensures the resources are freed when form is closed.
-            using CustomMessageBox form = new(text, caption, buttons, icon);
+            using CustomInputBox form = new(ref input, text, multiline, caption, null, null, null);
             form.ShowDialog();
+            input = inputTextBox.Texts;
+            return dialogResult;
+        }
+
+        /// <summary>Displays a prompt in a dialog box, waits for the user to input text or click a button.</summary>
+        ///
+        /// <param name="input">Update a String containing the contents of the text box.</param>
+        /// <param name="text">The text to display in the input box.</param>
+        /// <param name="multiline">TextBox multiline.</param>
+        /// <param name="caption">The text to display in the title bar of the input box.</param>
+        /// <param name="addWidth">Add amount to width.</param>
+        ///
+        /// <returns>One of the System.Windows.Forms.DialogResult values.</returns>
+        public static DialogResult Show(ref string input, string text, bool multiline, string caption, int addWidth)
+        {
+            // using construct ensures the resources are freed when form is closed.
+            using CustomInputBox form = new(ref input, text, multiline, caption, null, addWidth, null);
+            form.ShowDialog();
+            input = inputTextBox.Texts;
+            return dialogResult;
+        }
+
+        /// <summary>Displays a prompt in a dialog box, waits for the user to input text or click a button.</summary>
+        ///
+        /// <param name="input">Update a String containing the contents of the text box.</param>
+        /// <param name="text">The text to display in the input box.</param>
+        /// <param name="multiline">TextBox multiline.</param>
+        /// <param name="caption">The text to display in the title bar of the input box.</param>
+        /// <param name="addWidth">Add amount to width.</param>
+        /// <param name="addHeight">Add amount to height.</param>
+        ///
+        /// <returns>One of the System.Windows.Forms.DialogResult values.</returns>
+        public static DialogResult Show(ref string input, string text, bool multiline, string caption, int addWidth, int addHeight)
+        {
+            // using construct ensures the resources are freed when form is closed.
+            using CustomInputBox form = new(ref input, text, multiline, caption, null, addWidth, addHeight);
+            form.ShowDialog();
+            input = inputTextBox.Texts;
+            return dialogResult;
+        }
+
+        /// <summary>Displays a prompt in a dialog box, waits for the user to input text or click a button.</summary>
+        ///
+        /// <param name="input">Update a String containing the contents of the text box.</param>
+        /// <param name="text">The text to display in the input box.</param>
+        /// <param name="multiline">TextBox multiline.</param>
+        /// <param name="caption">The text to display in the title bar of the input box.</param>
+        /// <param name="icon">One of the System.Windows.Forms.MessageBoxIcon values that specifies which icon to display in the input box.</param>
+        ///
+        /// <returns>One of the System.Windows.Forms.DialogResult values.</returns>
+        public static DialogResult Show(ref string input, string text, bool multiline, string caption, MessageBoxIcon icon)
+        {
+            // using construct ensures the resources are freed when form is closed.
+            using CustomInputBox form = new(ref input, text, multiline, caption, icon, null, null);
+            form.ShowDialog();
+            input = inputTextBox.Texts;
+            return dialogResult;
+        }
+
+        /// <summary>Displays a prompt in a dialog box, waits for the user to input text or click a button.</summary>
+        ///
+        /// <param name="input">Update a String containing the contents of the text box.</param>
+        /// <param name="text">The text to display in the input box.</param>
+        /// <param name="multiline">TextBox multiline.</param>
+        /// <param name="caption">The text to display in the title bar of the input box.</param>
+        /// <param name="icon">One of the System.Windows.Forms.MessageBoxIcon values that specifies which icon to display in the input box.</param>
+        /// <param name="addWidth">Add amount to width.</param>
+        ///
+        /// <returns>One of the System.Windows.Forms.DialogResult values.</returns>
+        public static DialogResult Show(ref string input, string text, bool multiline, string caption, MessageBoxIcon icon, int addWidth)
+        {
+            // using construct ensures the resources are freed when form is closed.
+            using CustomInputBox form = new(ref input, text, multiline, caption, icon, addWidth, null);
+            form.ShowDialog();
+            input = inputTextBox.Texts;
+            return dialogResult;
+        }
+
+        /// <summary>Displays a prompt in a dialog box, waits for the user to input text or click a button.</summary>
+        ///
+        /// <param name="input">Update a String containing the contents of the text box.</param>
+        /// <param name="text">The text to display in the input box.</param>
+        /// <param name="multiline">TextBox multiline.</param>
+        /// <param name="caption">The text to display in the title bar of the input box.</param>
+        /// <param name="icon">One of the System.Windows.Forms.MessageBoxIcon values that specifies which icon to display in the input box.</param>
+        /// <param name="addWidth">Add amount to width.</param>
+        /// <param name="addHeight">Add amount to height.</param>
+        ///
+        /// <returns>One of the System.Windows.Forms.DialogResult values.</returns>
+        public static DialogResult Show(ref string input, string text, bool multiline, string caption, MessageBoxIcon icon, int addWidth, int addHeight)
+        {
+            // using construct ensures the resources are freed when form is closed.
+            using CustomInputBox form = new(ref input, text, multiline, caption, icon, addWidth, addHeight);
+            form.ShowDialog();
+            input = inputTextBox.Texts;
             return dialogResult;
         }
 

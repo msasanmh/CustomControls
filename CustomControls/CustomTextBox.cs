@@ -539,8 +539,8 @@ namespace CustomControls
         protected override void OnResize(EventArgs e)
         {
             base.OnResize(e);
-            if (DesignMode)
-                UpdateControlSize();
+            Invalidate();
+            UpdateControlSize();
         }
         protected override void OnLoad(EventArgs e)
         {

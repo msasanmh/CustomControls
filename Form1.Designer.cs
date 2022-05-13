@@ -48,13 +48,14 @@
             this.customButton4 = new CustomControls.CustomButton();
             this.customButton5 = new CustomControls.CustomButton();
             this.customComboBox1 = new CustomControls.CustomComboBox();
+            this.customButton6 = new CustomControls.CustomButton();
             ((System.ComponentModel.ISupportInitialize)(this.customDataGridView1)).BeginInit();
             this.customPanel1.SuspendLayout();
             this.SuspendLayout();
             // 
             // customGroupBox1
             // 
-            this.customGroupBox1.BorderColor = System.Drawing.Color.Red;
+            this.customGroupBox1.BorderColor = System.Drawing.Color.DodgerBlue;
             this.customGroupBox1.Location = new System.Drawing.Point(12, 12);
             this.customGroupBox1.Name = "customGroupBox1";
             this.customGroupBox1.Size = new System.Drawing.Size(200, 100);
@@ -64,7 +65,7 @@
             // 
             // customDataGridView1
             // 
-            this.customDataGridView1.BorderColor = System.Drawing.Color.Red;
+            this.customDataGridView1.BorderColor = System.Drawing.Color.DodgerBlue;
             this.customDataGridView1.CheckColor = System.Drawing.Color.Blue;
             this.customDataGridView1.ColumnHeadersBorder = true;
             dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
@@ -94,6 +95,7 @@
             this.customDataGridView1.RowHeadersVisible = false;
             this.customDataGridView1.RowTemplate.Height = 25;
             this.customDataGridView1.SelectionColor = System.Drawing.Color.LightBlue;
+            this.customDataGridView1.SelectionModeFocus = false;
             this.customDataGridView1.Size = new System.Drawing.Size(309, 146);
             this.customDataGridView1.TabIndex = 1;
             // 
@@ -121,7 +123,7 @@
             // customPanel1
             // 
             this.customPanel1.Border = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.customPanel1.BorderColor = System.Drawing.Color.Red;
+            this.customPanel1.BorderColor = System.Drawing.Color.DodgerBlue;
             this.customPanel1.ButtonBorderStyle = System.Windows.Forms.ButtonBorderStyle.Solid;
             this.customPanel1.Controls.Add(this.label1);
             this.customPanel1.Location = new System.Drawing.Point(218, 12);
@@ -140,8 +142,8 @@
             // 
             // customCheckBox1
             // 
-            this.customCheckBox1.BorderColor = System.Drawing.Color.Red;
-            this.customCheckBox1.CheckColor = System.Drawing.Color.Blue;
+            this.customCheckBox1.BorderColor = System.Drawing.Color.DodgerBlue;
+            this.customCheckBox1.CheckColor = System.Drawing.Color.LightSteelBlue;
             this.customCheckBox1.Checked = true;
             this.customCheckBox1.CheckState = System.Windows.Forms.CheckState.Checked;
             this.customCheckBox1.FlatAppearance.BorderSize = 0;
@@ -155,8 +157,8 @@
             // 
             // customCheckBox2
             // 
-            this.customCheckBox2.BorderColor = System.Drawing.Color.Red;
-            this.customCheckBox2.CheckColor = System.Drawing.Color.Blue;
+            this.customCheckBox2.BorderColor = System.Drawing.Color.DodgerBlue;
+            this.customCheckBox2.CheckColor = System.Drawing.Color.LightSteelBlue;
             this.customCheckBox2.Checked = true;
             this.customCheckBox2.CheckState = System.Windows.Forms.CheckState.Checked;
             this.customCheckBox2.FlatAppearance.BorderSize = 0;
@@ -172,12 +174,12 @@
             // 
             this.customTextBox1.AcceptsReturn = false;
             this.customTextBox1.AcceptsTab = false;
-            this.customTextBox1.BorderColor = System.Drawing.Color.Red;
+            this.customTextBox1.BorderColor = System.Drawing.Color.DodgerBlue;
             this.customTextBox1.BorderSize = 1;
             this.customTextBox1.CharacterCasing = System.Windows.Forms.CharacterCasing.Normal;
             this.customTextBox1.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.customTextBox1.HideSelection = true;
-            this.customTextBox1.Location = new System.Drawing.Point(179, 159);
+            this.customTextBox1.Location = new System.Drawing.Point(179, 187);
             this.customTextBox1.MaxLength = 32767;
             this.customTextBox1.Multiline = false;
             this.customTextBox1.Name = "customTextBox1";
@@ -196,12 +198,12 @@
             // 
             this.customTextBox2.AcceptsReturn = false;
             this.customTextBox2.AcceptsTab = false;
-            this.customTextBox2.BorderColor = System.Drawing.Color.Red;
+            this.customTextBox2.BorderColor = System.Drawing.Color.DodgerBlue;
             this.customTextBox2.BorderSize = 1;
             this.customTextBox2.CharacterCasing = System.Windows.Forms.CharacterCasing.Normal;
             this.customTextBox2.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.customTextBox2.HideSelection = true;
-            this.customTextBox2.Location = new System.Drawing.Point(179, 188);
+            this.customTextBox2.Location = new System.Drawing.Point(179, 216);
             this.customTextBox2.MaxLength = 32767;
             this.customTextBox2.MinimumSize = new System.Drawing.Size(0, 23);
             this.customTextBox2.Multiline = true;
@@ -219,7 +221,7 @@
             // 
             // customButton1
             // 
-            this.customButton1.BorderColor = System.Drawing.Color.Red;
+            this.customButton1.BorderColor = System.Drawing.Color.DodgerBlue;
             this.customButton1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.customButton1.Location = new System.Drawing.Point(368, 188);
             this.customButton1.Name = "customButton1";
@@ -232,7 +234,7 @@
             // 
             // customButton2
             // 
-            this.customButton2.BorderColor = System.Drawing.Color.Red;
+            this.customButton2.BorderColor = System.Drawing.Color.DodgerBlue;
             this.customButton2.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.customButton2.Location = new System.Drawing.Point(368, 217);
             this.customButton2.Name = "customButton2";
@@ -246,7 +248,7 @@
             // 
             // customProgressBar1
             // 
-            this.customProgressBar1.BorderColor = System.Drawing.Color.Red;
+            this.customProgressBar1.BorderColor = System.Drawing.Color.DodgerBlue;
             this.customProgressBar1.ChunksColor = System.Drawing.Color.LightPink;
             this.customProgressBar1.CustomText = "Custom Text";
             this.customProgressBar1.ForeColor = System.Drawing.Color.Black;
@@ -259,7 +261,7 @@
             // 
             // customButton3
             // 
-            this.customButton3.BorderColor = System.Drawing.Color.Red;
+            this.customButton3.BorderColor = System.Drawing.Color.DodgerBlue;
             this.customButton3.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.customButton3.Location = new System.Drawing.Point(487, 188);
             this.customButton3.Name = "customButton3";
@@ -272,7 +274,7 @@
             // 
             // customButton4
             // 
-            this.customButton4.BorderColor = System.Drawing.Color.Red;
+            this.customButton4.BorderColor = System.Drawing.Color.DodgerBlue;
             this.customButton4.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.customButton4.Location = new System.Drawing.Point(504, 217);
             this.customButton4.Name = "customButton4";
@@ -285,7 +287,7 @@
             // 
             // customButton5
             // 
-            this.customButton5.BorderColor = System.Drawing.Color.Red;
+            this.customButton5.BorderColor = System.Drawing.Color.DodgerBlue;
             this.customButton5.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.customButton5.Location = new System.Drawing.Point(318, 319);
             this.customButton5.Name = "customButton5";
@@ -299,7 +301,7 @@
             // 
             // customComboBox1
             // 
-            this.customComboBox1.BorderColor = System.Drawing.Color.Red;
+            this.customComboBox1.BorderColor = System.Drawing.Color.DodgerBlue;
             this.customComboBox1.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawVariable;
             this.customComboBox1.FormattingEnabled = true;
             this.customComboBox1.ItemHeight = 17;
@@ -315,12 +317,27 @@
             this.customComboBox1.Size = new System.Drawing.Size(121, 23);
             this.customComboBox1.TabIndex = 19;
             // 
+            // customButton6
+            // 
+            this.customButton6.BorderColor = System.Drawing.Color.DodgerBlue;
+            this.customButton6.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.customButton6.Location = new System.Drawing.Point(218, 157);
+            this.customButton6.Name = "customButton6";
+            this.customButton6.RoundedCorners = 0;
+            this.customButton6.SelectionColor = System.Drawing.Color.Blue;
+            this.customButton6.Size = new System.Drawing.Size(75, 23);
+            this.customButton6.TabIndex = 22;
+            this.customButton6.Text = "Input Box";
+            this.customButton6.UseVisualStyleBackColor = true;
+            this.customButton6.Click += new System.EventHandler(this.customButton6_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.DimGray;
             this.ClientSize = new System.Drawing.Size(743, 354);
+            this.Controls.Add(this.customButton6);
             this.Controls.Add(this.customComboBox1);
             this.Controls.Add(this.customButton5);
             this.Controls.Add(this.customButton4);
@@ -364,5 +381,6 @@
         private CustomButton customButton4;
         private CustomButton customButton5;
         private CustomComboBox customComboBox1;
+        private CustomButton customButton6;
     }
 }
