@@ -1,38 +1,43 @@
 ﻿using MsmhTools;
 using System;
 using System.ComponentModel;
+using System.Runtime.InteropServices;
 using System.Windows.Forms.Design;
 /*
-* Copyright MSasanMH, May 10, 2022.
+* Copyright MSasanMH, May 16, 2022.
 */
 
 namespace CustomControls
 {
     public class CustomPanel : Panel
     {
-        //// Disable Painting for Children Controls.
-        //protected override CreateParams CreateParams
-        //{
-        //    get
-        //    {
-        //        var parms = base.CreateParams;
-        //        parms.Style &= ~0x02000000;  // Turn Off WS_CLIPCHILDREN
-        //        return parms;
-        //    }
-        //}
+        private static class Methods
+        {
+            [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)]
+            private extern static int SetWindowTheme(IntPtr controlHandle, string appName, string idList);
+            internal static void SetDarkControl(Control control)
+            {
+                _ = SetWindowTheme(control.Handle, "DarkMode_Explorer", null);
+                foreach (Control c in control.Controls)
+                {
+                    _ = SetWindowTheme(c.Handle, "DarkMode_Explorer", null);
+                }
+            }
+        }
 
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public new BorderStyle BorderStyle { get; set; }
 
+        private BorderStyle mBorder = BorderStyle.FixedSingle;
         [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
         [Category("Appearance"), Description("Border Style")]
         public BorderStyle Border
         {
-            get { return border; }
+            get { return mBorder; }
             set
             {
-                border = value;
+                mBorder = value;
                 Invalidate();
             }
         }
@@ -110,7 +115,8 @@ namespace CustomControls
         private static Color BorderColorDisabled;
         private static bool ApplicationIdle = false;
         private bool once = true;
-        private BorderStyle border;
+
+        private readonly Panel innerPanel = new();
 
         public CustomPanel() : base()
         {
@@ -122,6 +128,8 @@ namespace CustomControls
             BorderStyle = BorderStyle.None;
             ButtonBorderStyle = ButtonBorderStyle.Solid;
 
+            Controls.Add(innerPanel);
+
             Application.Idle += Application_Idle;
             HandleCreated += CustomPanel_HandleCreated;
             Paint += CustomPanel_Paint;
@@ -132,6 +140,7 @@ namespace CustomControls
             Enter += CustomPanel_Enter;
             MouseEnter += CustomPanel_MouseEnter;
             MouseLeave += CustomPanel_MouseLeave;
+            MouseWheel += CustomPanel_MouseWheel;
             ParentChanged += CustomPanel_ParentChanged;
             Resize += CustomPanel_Resize;
             Scroll += CustomPanel_Scroll;
@@ -168,6 +177,17 @@ namespace CustomControls
 
         private void CustomPanel_HandleCreated(object? sender, EventArgs e)
         {
+            foreach (Control c in Controls)
+            {
+                if (c is not Panel)
+                    c.BringToFront();
+                foreach (Control c2 in c.Controls)
+                {
+                    if (c2 is not Panel)
+                        c2.BringToFront();
+                }
+            }
+
             // Timer is needed in some rare cases.
             var p = sender as Panel;
             int totalTime = 500;
@@ -193,7 +213,7 @@ namespace CustomControls
             if (ApplicationIdle == false)
                 return;
 
-            Rectangle rect = new(0, 0, ClientSize.Width, ClientSize.Height);
+            Rectangle rect = new(0, 0, ClientRectangle.Width, ClientRectangle.Height);
 
             if (sender is Panel panel)
             {
@@ -256,6 +276,9 @@ namespace CustomControls
                 }
                 ForeColor = foreColor;
 
+                innerPanel.BackColor = backColor;
+                innerPanel.ForeColor = foreColor;
+
                 if (DesignMode || !DesignMode)
                 {
                     // Fill Background
@@ -270,9 +293,9 @@ namespace CustomControls
                     {
                         Color secondBorderColor;
                         if (borderColor.DarkOrLight() == "Dark")
-                            secondBorderColor = borderColor.ChangeBrightness(0.6f);
+                            secondBorderColor = borderColor.ChangeBrightness(0.5f);
                         else
-                            secondBorderColor = borderColor.ChangeBrightness(-0.6f);
+                            secondBorderColor = borderColor.ChangeBrightness(-0.5f);
 
                         Rectangle rect3DBorder;
 
@@ -289,38 +312,82 @@ namespace CustomControls
             }
         }
 
-        private static void CustomPanel_EnabledChanged(object? sender, EventArgs e)
+        private void CustomPanel_EnabledChanged(object? sender, EventArgs e)
         {
             var p = sender as Panel;
+            if (p.Enabled)
+                innerPanel.Enabled = true;
+            else
+                innerPanel.Enabled = false;
             p.Invalidate();
         }
 
         private void CustomPanel_Invalidated(object? sender, InvalidateEventArgs e)
         {
             var p = sender as Panel;
+
+            if (!DesignMode && AutoScroll)
+            {
+                innerPanel.AutoScroll = true;
+                AutoScroll = false;
+            }
+
+            innerPanel.AutoScrollMargin = p.AutoScrollMargin;
+            innerPanel.AutoScrollMinSize = p.AutoScrollMinSize;
+            innerPanel.AutoScrollOffset = p.AutoScrollOffset;
+
+            if (Border == BorderStyle.FixedSingle)
+            {
+                innerPanel.Location = new(1, 1);
+                innerPanel.Width = ClientRectangle.Width - 2;
+                innerPanel.Height = ClientRectangle.Height - 2;
+            }
+            else if (Border == BorderStyle.Fixed3D)
+            {
+                innerPanel.Location = new(2, 2);
+                innerPanel.Width = ClientRectangle.Width - 4;
+                innerPanel.Height = ClientRectangle.Height - 4;
+            }
+            else
+            {
+                innerPanel.Location = new(0, 0);
+                innerPanel.Width = ClientRectangle.Width;
+                innerPanel.Height = ClientRectangle.Height;
+            }
+
+            if (BackColor.DarkOrLight() == "Dark")
+                Methods.SetDarkControl(innerPanel);
+
             foreach (Control c in p.Controls)
                 c.Invalidate();
         }
 
-        private static void CustomPanel_ControlAdded(object? sender, ControlEventArgs e)
+        private void CustomPanel_ControlAdded(object? sender, ControlEventArgs e)
+        {
+            var p = sender as Panel;
+            p.Invalidate();
+            if (!DesignMode)
+            {
+                p.Controls.Remove(e.Control);
+                innerPanel.Controls.Add(e.Control);
+            }
+        }
+
+        private void CustomPanel_ControlRemoved(object? sender, ControlEventArgs e)
+        {
+            var p = sender as Panel;
+            p.Invalidate();
+            if (!DesignMode)
+                innerPanel.Controls.Remove(e.Control);
+        }
+
+        private void CustomPanel_Enter(object? sender, EventArgs e)
         {
             var p = sender as Panel;
             p.Invalidate();
         }
 
-        private static void CustomPanel_ControlRemoved(object? sender, ControlEventArgs e)
-        {
-            var p = sender as Panel;
-            p.Invalidate();
-        }
-
-        private static void CustomPanel_Enter(object? sender, EventArgs e)
-        {
-            var p = sender as Panel;
-            p.Invalidate();
-        }
-
-        private static void CustomPanel_MouseEnter(object? sender, EventArgs e)
+        private void CustomPanel_MouseEnter(object? sender, EventArgs e)
         {
             var p = sender as Panel;
             p.Invalidate();
@@ -332,25 +399,31 @@ namespace CustomControls
             p.Invalidate();
         }
 
-        private static void CustomPanel_ParentChanged(object? sender, EventArgs e)
+        private void CustomPanel_MouseWheel(object? sender, MouseEventArgs e)
         {
             var p = sender as Panel;
             p.Invalidate();
         }
 
-        private static void CustomPanel_Resize(object? sender, EventArgs e)
+        private void CustomPanel_ParentChanged(object? sender, EventArgs e)
         {
             var p = sender as Panel;
             p.Invalidate();
         }
 
-        private static void CustomPanel_Scroll(object? sender, ScrollEventArgs e)
+        private void CustomPanel_Resize(object? sender, EventArgs e)
         {
             var p = sender as Panel;
             p.Invalidate();
         }
 
-        private static void CustomPanel_SizeChanged(object? sender, EventArgs e)
+        private void CustomPanel_Scroll(object? sender, ScrollEventArgs e)
+        {
+            var p = sender as Panel;
+            p.Invalidate();
+        }
+
+        private void CustomPanel_SizeChanged(object? sender, EventArgs e)
         {
             var p = sender as Panel;
             p.Invalidate();
