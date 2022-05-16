@@ -118,6 +118,57 @@ namespace CustomControls
 
         private readonly Panel innerPanel = new();
 
+        // Events Action
+        [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
+        [Category("Action"), Description("Click")]
+        public new event EventHandler? Click;
+
+        [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
+        [Category("Action"), Description("Double Click")]
+        public new event EventHandler? DoubleClick;
+
+        [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
+        [Category("Action"), Description("Mouse Click")]
+        public new event MouseEventHandler? MouseClick;
+
+        [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
+        [Category("Action"), Description("Mouse Double Click")]
+        public new event MouseEventHandler? MouseDoubleClick;
+
+        // Events Focus
+        [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
+        [Category("Focus"), Description("Enter")]
+        public new event EventHandler? Enter;
+
+        [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
+        [Category("Focus"), Description("Leave")]
+        public new event EventHandler? Leave;
+
+        // Events Mouse
+        [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
+        [Category("Mouse"), Description("Mouse Down")]
+        public new event MouseEventHandler? MouseDown;
+
+        [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
+        [Category("Mouse"), Description("Mouse Enter")]
+        public new event EventHandler? MouseEnter;
+
+        [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
+        [Category("Mouse"), Description("Mouse Hover")]
+        public new event EventHandler? MouseHover;
+
+        [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
+        [Category("Mouse"), Description("Mouse Leave")]
+        public new event EventHandler? MouseLeave;
+
+        [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
+        [Category("Mouse"), Description("Mouse Move")]
+        public new event MouseEventHandler? MouseMove;
+
+        [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
+        [Category("Mouse"), Description("Mouse Up")]
+        public new event MouseEventHandler? MouseUp;
+
         public CustomPanel() : base()
         {
             SetStyle(ControlStyles.DoubleBuffer |
@@ -128,16 +179,36 @@ namespace CustomControls
             BorderStyle = BorderStyle.None;
             ButtonBorderStyle = ButtonBorderStyle.Solid;
 
+            // Events Action
+            innerPanel.Click += (object? sender, EventArgs e) => { Click?.Invoke(sender, e); };
+            innerPanel.DoubleClick += (object? sender, EventArgs e) => { DoubleClick?.Invoke(sender, e); };
+            innerPanel.MouseClick += (object? sender, MouseEventArgs e) => { MouseClick?.Invoke(sender, e); };
+            innerPanel.MouseDoubleClick += (object? sender, MouseEventArgs e) => { MouseDoubleClick?.Invoke(sender, e); };
+
+            // Events Focus
+            innerPanel.Enter += (object? sender, EventArgs e) => { Enter?.Invoke(sender, e); };
+            innerPanel.Leave += (object? sender, EventArgs e) => { Leave?.Invoke(sender, e); };
+
+            // Events Mouse
+            innerPanel.MouseDown += (object? sender, MouseEventArgs e) => { MouseDown?.Invoke(sender, e); };
+            innerPanel.MouseEnter += (object? sender, EventArgs e) => { MouseEnter?.Invoke(sender, e); };
+            innerPanel.MouseHover += (object? sender, EventArgs e) => { MouseHover?.Invoke(sender, e); };
+            innerPanel.MouseLeave += (object? sender, EventArgs e) => { MouseLeave?.Invoke(sender, e); };
+            innerPanel.MouseMove += (object? sender, MouseEventArgs e) => { MouseMove?.Invoke(sender, e); };
+            innerPanel.MouseUp += (object? sender, MouseEventArgs e) => { MouseUp?.Invoke(sender, e); };
+
             Controls.Add(innerPanel);
 
             Application.Idle += Application_Idle;
             HandleCreated += CustomPanel_HandleCreated;
             Paint += CustomPanel_Paint;
+            BackgroundImageChanged += CustomPanel_BackgroundImageChanged;
             EnabledChanged += CustomPanel_EnabledChanged;
             Invalidated += CustomPanel_Invalidated;
             ControlAdded += CustomPanel_ControlAdded;
             ControlRemoved += CustomPanel_ControlRemoved;
             Enter += CustomPanel_Enter;
+            MouseDown += CustomPanel_MouseDown;
             MouseEnter += CustomPanel_MouseEnter;
             MouseLeave += CustomPanel_MouseLeave;
             MouseWheel += CustomPanel_MouseWheel;
@@ -312,6 +383,11 @@ namespace CustomControls
             }
         }
 
+        private void CustomPanel_BackgroundImageChanged(object? sender, EventArgs e)
+        {
+            innerPanel.BackgroundImage = BackgroundImage;
+        }
+
         private void CustomPanel_EnabledChanged(object? sender, EventArgs e)
         {
             var p = sender as Panel;
@@ -370,6 +446,7 @@ namespace CustomControls
             {
                 p.Controls.Remove(e.Control);
                 innerPanel.Controls.Add(e.Control);
+                e.Control.BringToFront(); // Makes Arrow Keys Work Correctly.
             }
         }
 
@@ -382,6 +459,12 @@ namespace CustomControls
         }
 
         private void CustomPanel_Enter(object? sender, EventArgs e)
+        {
+            var p = sender as Panel;
+            p.Invalidate();
+        }
+
+        private void CustomPanel_MouseDown(object? sender, MouseEventArgs e)
         {
             var p = sender as Panel;
             p.Invalidate();
