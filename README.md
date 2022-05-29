@@ -4,6 +4,7 @@
 - [Custom ComboBox](https://github.com/msasanmh/CustomControls/blob/main/CustomControls/CustomComboBox.cs "Custom ComboBox")
 - [Custom DataGridView](https://github.com/msasanmh/CustomControls/blob/main/CustomControls/CustomDataGridView.cs "Custom DataGridView")
 - [Custom GroupBox](https://github.com/msasanmh/CustomControls/blob/main/CustomControls/CustomGroupBox.cs "Custom GroupBox")
+- [Custom InputBox](https://github.com/msasanmh/CustomControls/blob/main/CustomControls/CustomInputBox.cs "Custom InputBox")
 - [Custom MessageBox](https://github.com/msasanmh/CustomControls/blob/main/CustomControls/CustomMessageBox.cs "Custom MessageBox")
 - [Custom Panel](https://github.com/msasanmh/CustomControls/blob/main/CustomControls/CustomPanel.cs "Custom Panel")
 - [Custom ProgressBar](https://github.com/msasanmh/CustomControls/blob/main/CustomControls/CustomProgressBar.cs "Custom ProgressBar")
