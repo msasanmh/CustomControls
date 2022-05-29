@@ -267,7 +267,7 @@ namespace CustomControls
                         {
                             BackColor = OriginalColors[0];
                         }
-
+                        
                         ForeColor = OriginalColors[1];
                         BorderColor = OriginalColors[2];
                         SelectionColor = OriginalColors[3];
@@ -329,15 +329,18 @@ namespace CustomControls
                     {
                         if (ButtonMouseHover)
                         {
-                            using SolidBrush sbHBG = new(mouseHoverColor);
-                            //e.Graphics.FillRectangle(sbHBG, rect);
-                            e.Graphics.FillRoundedRectangle(sbHBG, rect, RoundedCorners, RoundedCorners, RoundedCorners, RoundedCorners);
-
                             if (ButtonMouseDown)
                             {
                                 using SolidBrush sbDBG = new(mouseDownColor);
                                 //e.Graphics.FillRectangle(sbDBG, rect);
                                 e.Graphics.FillRoundedRectangle(sbDBG, rect, RoundedCorners, RoundedCorners, RoundedCorners, RoundedCorners);
+                                ButtonMouseDown = false; // Fix a minor bug.
+                            }
+                            else
+                            {
+                                using SolidBrush sbHBG = new(mouseHoverColor);
+                                //e.Graphics.FillRectangle(sbHBG, rect);
+                                e.Graphics.FillRoundedRectangle(sbHBG, rect, RoundedCorners, RoundedCorners, RoundedCorners, RoundedCorners);
                             }
                         }
                     }

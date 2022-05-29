@@ -2,6 +2,7 @@
 using System;
 using System.ComponentModel;
 using System.Drawing.Design;
+using System.Runtime.InteropServices;
 using System.Windows.Forms.Design;
 /*
 * Copyright MSasanMH, May 10, 2022.
@@ -12,6 +13,20 @@ namespace CustomControls
     [DefaultEvent("TextChanged")]
     public class CustomTextBox : UserControl
     {
+        private static class Methods
+        {
+            [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)]
+            private extern static int SetWindowTheme(IntPtr controlHandle, string appName, string idList);
+            internal static void SetDarkControl(Control control)
+            {
+                _ = SetWindowTheme(control.Handle, "DarkMode_Explorer", null);
+                foreach (Control c in control.Controls)
+                {
+                    _ = SetWindowTheme(c.Handle, "DarkMode_Explorer", null);
+                }
+            }
+        }
+
         // Disable
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
@@ -301,7 +316,7 @@ namespace CustomControls
             AutoScaleMode = AutoScaleMode.None;
             Padding = new(0);
             Size = new(100, 23);
-            
+
             // Default
             AutoScroll = false;
             AutoScrollMargin = new(0, 0);
@@ -325,6 +340,7 @@ namespace CustomControls
             textBox.KeyPress += TextBox_KeyPress;
             textBox.Enter += TextBox_Enter;
             textBox.Leave += TextBox_Leave;
+            textBox.Invalidated += TextBox_Invalidated;
             textBox.AcceptsTabChanged += TextBox_AcceptsTabChanged;
             textBox.HideSelectionChanged += TextBox_HideSelectionChanged;
             textBox.ModifiedChanged += TextBox_ModifiedChanged;
@@ -424,7 +440,7 @@ namespace CustomControls
             if (ModifiedChanged != null)
                 ModifiedChanged.Invoke(sender, e);
         }
-
+        
         [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
         [Category("Property Changed"), Description("Multiline Changed")]
         public event EventHandler? MultilineChanged;
@@ -496,6 +512,12 @@ namespace CustomControls
         {
             isFocused = false;
             Invalidate();
+        }
+
+        private void TextBox_Invalidated(object? sender, InvalidateEventArgs e)
+        {
+            if (BackColor.DarkOrLight() == "Dark")
+                Methods.SetDarkControl(textBox);
         }
 
         // Overridden Methods

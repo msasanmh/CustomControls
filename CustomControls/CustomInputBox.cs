@@ -291,7 +291,7 @@ namespace CustomControls
 
             // Input Label
             inputTextBox = new();
-            inputTextBox.Text = input;
+            inputTextBox.Texts = input;
             if (multiline == false)
             {
                 inputTextBox.Size = new Size(rect.Width - (5 * 2), inputTextBox.Height);

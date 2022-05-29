@@ -2,12 +2,27 @@
 using System;
 using System.ComponentModel;
 using System.Drawing.Drawing2D;
+using System.Runtime.InteropServices;
 using System.Windows.Forms.Design;
 
 namespace CustomControls
 {
     public class CustomDataGridView : DataGridView
     {
+        private static class Methods
+        {
+            [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)]
+            private extern static int SetWindowTheme(IntPtr controlHandle, string appName, string idList);
+            internal static void SetDarkControl(Control control)
+            {
+                _ = SetWindowTheme(control.Handle, "DarkMode_Explorer", null);
+                foreach (Control c in control.Controls)
+                {
+                    _ = SetWindowTheme(c.Handle, "DarkMode_Explorer", null);
+                }
+            }
+        }
+
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public new Color BackgroundColor { get; set; }
@@ -171,6 +186,7 @@ namespace CustomControls
 
             Application.Idle += Application_Idle;
             HandleCreated += DataGridView_HandleCreated;
+            Invalidated += CustomDataGridView_Invalidated;
             MouseEnter += CustomDataGridView_MouseEnter;
             MouseUp += CustomDataGridView_MouseUp;
             MouseDown += CustomDataGridView_MouseDown;
@@ -228,6 +244,12 @@ namespace CustomControls
             var gv = sender as DataGridView;
             DataGridViewColor(gv);
             gv.Invalidate();
+        }
+
+        private void CustomDataGridView_Invalidated(object? sender, InvalidateEventArgs e)
+        {
+            if (BackColor.DarkOrLight() == "Dark")
+                Methods.SetDarkControl(this);
         }
 
         private void CustomDataGridView_MouseEnter(object? sender, EventArgs e)
@@ -770,6 +792,8 @@ namespace CustomControls
                         dgv.Rows[currentRow].Selected = true;
                     }
                 }
+
+                
             }
         }
 
