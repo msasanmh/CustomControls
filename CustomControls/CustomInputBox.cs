@@ -10,7 +10,7 @@ namespace CustomControls
     public class CustomInputBox : Form
     {
         [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)]
-        private extern static int SetWindowTheme(IntPtr hWnd, string pszSubAppName, string pszSubIdList);
+        private extern static int SetWindowTheme(IntPtr hWnd, string pszSubAppName, string? pszSubIdList);
 
         // Make CustomInputBox movable.
         private const int WM_NCLBUTTONDOWN = 0xA1;

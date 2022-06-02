@@ -16,7 +16,7 @@ namespace CustomControls
         private static class Methods
         {
             [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)]
-            private extern static int SetWindowTheme(IntPtr controlHandle, string appName, string idList);
+            private extern static int SetWindowTheme(IntPtr controlHandle, string appName, string? idList);
             internal static void SetDarkControl(Control control)
             {
                 _ = SetWindowTheme(control.Handle, "DarkMode_Explorer", null);
@@ -62,7 +62,7 @@ namespace CustomControls
             }
         }
 
-        private Color mBorderColor = Color.Red;
+        private Color mBorderColor = Color.Blue;
         [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
         [Editor(typeof(WindowsFormsComponentEditor), typeof(Color))]
         [Category("Appearance"), Description("Border Color")]
@@ -210,19 +210,6 @@ namespace CustomControls
         }
 
         [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
-        [Category("Behavior"), Description("Enabled")]
-        public new bool Enabled
-        {
-            get { return textBox.Enabled; }
-            set
-            {
-                textBox.Enabled = value;
-                Enabled = value;
-                Invalidate();
-            }
-        }
-
-        [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
         [Category("Behavior"), Description("Hide Selection")]
         public bool HideSelection
         {
@@ -327,13 +314,14 @@ namespace CustomControls
             AutoValidate = AutoValidate.EnablePreventFocusChange;
 
             Controls.Add(textBox);
-            textBox.BackColor = BackColor;
-            textBox.ForeColor = ForeColor;
+            textBox.BackColor = GetBackColor();
+            textBox.ForeColor = GetForeColor();
             //textBox.Dock = DockStyle.Fill;
             textBox.BorderStyle = BorderStyle.None;
 
             // Events
             Application.Idle += Application_Idle;
+            EnabledChanged += CustomTextBox_EnabledChanged;
             textBox.Click += TextBox_Click;
             textBox.MouseEnter += TextBox_MouseEnter;
             textBox.MouseLeave += TextBox_MouseLeave;
@@ -412,6 +400,13 @@ namespace CustomControls
         private void Parent_Move(object? sender, EventArgs e)
         {
             Invalidate();
+        }
+
+        private void CustomTextBox_EnabledChanged(object? sender, EventArgs e)
+        {
+            textBox.Enabled = Enabled;
+            Invalidate();
+            textBox.Invalidate();
         }
 
         [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
@@ -518,52 +513,37 @@ namespace CustomControls
         {
             if (BackColor.DarkOrLight() == "Dark")
                 Methods.SetDarkControl(textBox);
+            textBox.Enabled = Enabled;
+            textBox.BackColor = GetBackColor();
+            textBox.ForeColor = GetForeColor();
         }
 
         // Overridden Methods
         protected override void OnPaint(PaintEventArgs e)
         {
-            Color borderColor = mBorderColor;
-            if (Enabled)
-            {
-                if (isFocused)
-                {
-                    // Focused Border Color
-                    if (borderColor.DarkOrLight() == "Dark")
-                        borderColor = borderColor.ChangeBrightness(0.4f);
-                    else if (borderColor.DarkOrLight() == "Light")
-                        borderColor = borderColor.ChangeBrightness(-0.4f);
-                }
-                else
-                    borderColor = mBorderColor;
-            }
-            else
-            {
-                // Disabled Border Color
-                if (borderColor.DarkOrLight() == "Dark")
-                    borderColor = borderColor.ChangeBrightness(0.3f);
-                else if (borderColor.DarkOrLight() == "Light")
-                    borderColor = borderColor.ChangeBrightness(-0.3f);
-            }
-
             base.OnPaint(e);
-            Graphics g = e.Graphics;
+
+            Color borderColor = GetBorderColor();
+
+            e.Graphics.Clear(GetBackColor());
 
             //Draw border
             using Pen penBorder = new(borderColor, mBorderSize);
             penBorder.Alignment = System.Drawing.Drawing2D.PenAlignment.Inset;
 
             if (mUnderlinedStyle) // Line Style
-                g.DrawLine(penBorder, 0, Height - 1, Width, Height - 1);
+                e.Graphics.DrawLine(penBorder, 0, Height - 1, Width, Height - 1);
             else //Normal Style
-                g.DrawRectangle(penBorder, 0, 0, Width - 0.5F, Height - 0.5F);
+                e.Graphics.DrawRectangle(penBorder, 0, 0, Width - 0.5F, Height - 0.5F);
         }
+
         protected override void OnResize(EventArgs e)
         {
             base.OnResize(e);
             Invalidate();
             UpdateControlSize();
         }
+
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
@@ -598,6 +578,57 @@ namespace CustomControls
                 textBox.Height = Height - padding;
                 textBox.Width = Width - padding;
                 textBox.Location = new(padding / 2, padding / 2);
+            }
+        }
+
+        private Color GetBackColor()
+        {
+            if (Enabled)
+                return BackColor;
+            else
+            {
+                if (BackColor.DarkOrLight() == "Dark")
+                    return BackColor.ChangeBrightness(0.3f);
+                else
+                    return BackColor.ChangeBrightness(-0.3f);
+            }
+        }
+
+        private Color GetForeColor()
+        {
+            if (Enabled)
+                return ForeColor;
+            else
+            {
+                if (ForeColor.DarkOrLight() == "Dark")
+                    return ForeColor.ChangeBrightness(0.2f);
+                else
+                    return ForeColor.ChangeBrightness(-0.2f);
+            }
+        }
+
+        private Color GetBorderColor()
+        {
+            if (Enabled)
+            {
+                if (isFocused)
+                {
+                    // Focused Border Color
+                    if (BorderColor.DarkOrLight() == "Dark")
+                        return BorderColor.ChangeBrightness(0.4f);
+                    else
+                        return BorderColor.ChangeBrightness(-0.4f);
+                }
+                else
+                    return BorderColor;
+            }
+            else
+            {
+                // Disabled Border Color
+                if (BorderColor.DarkOrLight() == "Dark")
+                    return BorderColor.ChangeBrightness(0.3f);
+                else
+                    return BorderColor.ChangeBrightness(-0.3f);
             }
         }
 

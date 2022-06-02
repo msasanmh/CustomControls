@@ -49,7 +49,7 @@ namespace CustomControls
             }
         }
 
-        private Color mBorderColor = Color.Red;
+        private Color mBorderColor = Color.Blue;
         [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
         [Editor(typeof(WindowsFormsComponentEditor), typeof(Color))]
         [Category("Appearance"), Description("Border Color")]
@@ -66,11 +66,6 @@ namespace CustomControls
             }
         }
 
-        private static Color[]? OriginalColors;
-        private static Color BackColorDisabled;
-        private static Color ForeColorDisabled;
-        private static Color BorderColorDisabled;
-
         private static bool ApplicationIdle = false;
         private bool once = true;
 
@@ -83,6 +78,7 @@ namespace CustomControls
                      ControlStyles.OptimizedDoubleBuffer |
                      ControlStyles.ResizeRedraw |
                      ControlStyles.UserPaint, true);
+            SetStyle(ControlStyles.Opaque, true);
 
             FlatStyle = FlatStyle.Flat;
 
@@ -142,7 +138,6 @@ namespace CustomControls
 
         private void CustomGroupBox_HandleCreated(object? sender, EventArgs e)
         {
-            OriginalColors = new Color[] { mBackColor, mForeColor, mBorderColor };
             Invalidate();
         }
 
@@ -213,115 +208,113 @@ namespace CustomControls
 
         private void CustomGroupBox_Paint(object? sender, PaintEventArgs e)
         {
-            // Update Colors
-            OriginalColors = new Color[] { BackColor, ForeColor, BorderColor };
-
             if (ApplicationIdle == false)
                 return;
 
             GetPoint = PointToScreen(Location);
             GetName = Name;
 
-            var box = sender as GroupBox;
-
-            if (DesignMode)
+            if (sender is GroupBox box)
             {
-                BackColor = mBackColor;
-                ForeColor = mForeColor;
-                BorderColor = mBorderColor;
-            }
-            else
-            {
-                if (OriginalColors == null)
-                    return;
+                Color backColor = GetBackColor(box);
+                Color foreColor = GetForeColor();
+                Color borderColor = GetBorderColor();
 
-                if (box.Enabled)
+                SizeF strSize = e.Graphics.MeasureString(box.Text, box.Font);
+                Rectangle rect = new(box.ClientRectangle.X,
+                                               box.ClientRectangle.Y + (int)(strSize.Height / 2),
+                                               box.ClientRectangle.Width - 1,
+                                               box.ClientRectangle.Height - (int)(strSize.Height / 2) - 1);
+
+                e.Graphics.Clear(backColor);
+
+                // Draw Text
+                using SolidBrush sbForeColor = new(foreColor);
+                // Draw Border
+                using Pen penBorder = new(borderColor);
+
+                if (box.RightToLeft == RightToLeft.Yes)
                 {
-                    BackColor = OriginalColors[0];
-                    ForeColor = OriginalColors[1];
-                    BorderColor = OriginalColors[2];
+                    // Draw Text
+                    e.Graphics.DrawString(box.Text, box.Font, sbForeColor, box.Width - (box.Padding.Left + 1) - strSize.Width, 0);
+                    // Draw Border TopLeft
+                    e.Graphics.DrawLine(penBorder, new Point(rect.X, rect.Y), new Point((rect.X + rect.Width) - (box.Padding.Left + 1) - (int)strSize.Width, rect.Y));
+                    // Draw Border TopRight
+                    e.Graphics.DrawLine(penBorder, new Point((rect.X + rect.Width) - (box.Padding.Left + 1), rect.Y), new Point(rect.X + rect.Width, rect.Y));
                 }
                 else
                 {
-                    // Disabled Colors
-                    if (BackColor.DarkOrLight() == "Dark")
-                        BackColorDisabled = OriginalColors[0].ChangeBrightness(0.3f);
-                    else if (BackColor.DarkOrLight() == "Light")
-                        BackColorDisabled = OriginalColors[0].ChangeBrightness(-0.3f);
-
-                    if (ForeColor.DarkOrLight() == "Dark")
-                        ForeColorDisabled = OriginalColors[1].ChangeBrightness(0.2f);
-                    else if (ForeColor.DarkOrLight() == "Light")
-                        ForeColorDisabled = OriginalColors[1].ChangeBrightness(-0.2f);
-
-                    if (BorderColor.DarkOrLight() == "Dark")
-                        BorderColorDisabled = OriginalColors[2].ChangeBrightness(0.3f);
-                    else if (BorderColor.DarkOrLight() == "Light")
-                        BorderColorDisabled = OriginalColors[2].ChangeBrightness(-0.3f);
+                    // Draw Text
+                    e.Graphics.DrawString(box.Text, box.Font, sbForeColor, (box.Padding.Left + 1), 0);
+                    // Draw Border TopLeft
+                    e.Graphics.DrawLine(penBorder, new Point(rect.X, rect.Y), new Point(rect.X + (box.Padding.Left + 1), rect.Y));
+                    // Draw Border TopRight
+                    e.Graphics.DrawLine(penBorder, new Point(rect.X + (box.Padding.Left + 1) + (int)strSize.Width, rect.Y), new Point(rect.X + rect.Width, rect.Y));
                 }
+
+                // Draw Border Left
+                e.Graphics.DrawLine(penBorder, rect.Location, new Point(rect.X, rect.Y + rect.Height));
+                // Draw Border Bottom
+                e.Graphics.DrawLine(penBorder, new Point(rect.X, rect.Y + rect.Height), new Point(rect.X + rect.Width, rect.Y + rect.Height));
+                // Draw Border Right
+                e.Graphics.DrawLine(penBorder, new Point(rect.X + rect.Width, rect.Y), new Point(rect.X + rect.Width, rect.Y + rect.Height));
+
             }
-
-            Color backColor;
-            Color foreColor;
-            Color borderColor;
-
-            if (box.Enabled)
-            {
-                backColor = BackColor;
-                foreColor = ForeColor;
-                borderColor = BorderColor;
-            }
-            else
-            {
-                backColor = BackColor;
-                if (box.Parent != null)
-                {
-                    if (box.Parent.Enabled == false)
-                        backColor = BackColorDisabled;
-                }
-                foreColor = ForeColorDisabled;
-                borderColor = BorderColorDisabled;
-            }
-
-            SizeF strSize = e.Graphics.MeasureString(box.Text, box.Font);
-            Rectangle rect = new(box.ClientRectangle.X,
-                                           box.ClientRectangle.Y + (int)(strSize.Height / 2),
-                                           box.ClientRectangle.Width - 1,
-                                           box.ClientRectangle.Height - (int)(strSize.Height / 2) - 1);
-
-            e.Graphics.Clear(backColor);
-            
-            // Draw Text
-            using SolidBrush sbForeColor = new(foreColor);
-            // Draw Border
-            using Pen penBorder = new(borderColor);
-
-            if (box.RightToLeft == RightToLeft.Yes)
-            {
-                // Draw Text
-                e.Graphics.DrawString(box.Text, box.Font, sbForeColor, box.Width - (box.Padding.Left + 1) - strSize.Width, 0);
-                // Draw Border TopLeft
-                e.Graphics.DrawLine(penBorder, new Point(rect.X, rect.Y), new Point((rect.X +rect.Width) - (box.Padding.Left + 1) - (int)strSize.Width, rect.Y));
-                // Draw Border TopRight
-                e.Graphics.DrawLine(penBorder, new Point((rect.X + rect.Width) - (box.Padding.Left + 1), rect.Y), new Point(rect.X + rect.Width, rect.Y));
-            }
-            else
-            {
-                // Draw Text
-                e.Graphics.DrawString(box.Text, box.Font, sbForeColor, (box.Padding.Left + 1), 0);
-                // Draw Border TopLeft
-                e.Graphics.DrawLine(penBorder, new Point(rect.X, rect.Y), new Point(rect.X + (box.Padding.Left + 1), rect.Y));
-                // Draw Border TopRight
-                e.Graphics.DrawLine(penBorder, new Point(rect.X + (box.Padding.Left + 1) + (int)strSize.Width, rect.Y), new Point(rect.X + rect.Width, rect.Y));
-            }
-
-            // Draw Border Left
-            e.Graphics.DrawLine(penBorder, rect.Location, new Point(rect.X, rect.Y + rect.Height));
-            // Draw Border Bottom
-            e.Graphics.DrawLine(penBorder, new Point(rect.X, rect.Y + rect.Height), new Point(rect.X + rect.Width, rect.Y + rect.Height));
-            // Draw Border Right
-            e.Graphics.DrawLine(penBorder, new Point(rect.X + rect.Width, rect.Y), new Point(rect.X + rect.Width, rect.Y + rect.Height));
-
         }
+
+        private Color GetBackColor(GroupBox groupBox)
+        {
+            if (groupBox.Enabled)
+                return BackColor;
+            else
+            {
+                if (groupBox.Parent != null)
+                {
+                    if (groupBox.Parent.Enabled == false)
+                        return GetDisabledColor();
+                    else
+                        return GetDisabledColor();
+                }
+                else
+                {
+                    return GetDisabledColor();
+                }
+
+                Color GetDisabledColor()
+                {
+                    if (BackColor.DarkOrLight() == "Dark")
+                        return BackColor.ChangeBrightness(0.3f);
+                    else
+                        return BackColor.ChangeBrightness(-0.3f);
+                }
+            }
+        }
+
+        private Color GetForeColor()
+        {
+            if (Enabled)
+                return ForeColor;
+            else
+            {
+                if (ForeColor.DarkOrLight() == "Dark")
+                    return ForeColor.ChangeBrightness(0.2f);
+                else
+                    return ForeColor.ChangeBrightness(-0.2f);
+            }
+        }
+
+        private Color GetBorderColor()
+        {
+            if (Enabled)
+                return BorderColor;
+            else
+            {
+                if (BorderColor.DarkOrLight() == "Dark")
+                    return BorderColor.ChangeBrightness(0.3f);
+                else
+                    return BorderColor.ChangeBrightness(-0.3f);
+            }
+        }
+
     }
 }

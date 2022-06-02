@@ -1,6 +1,7 @@
 ﻿using MsmhTools;
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms.Design;
 /*
@@ -49,7 +50,7 @@ namespace CustomControls
             }
         }
 
-        private Color mBorderColor = Color.Red;
+        private Color mBorderColor = Color.Blue;
         [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
         [Editor(typeof(WindowsFormsComponentEditor), typeof(Color))]
         [Category("Appearance"), Description("Border Color")]
@@ -66,7 +67,7 @@ namespace CustomControls
             }
         }
 
-        private Color mSelectionColor = Color.Blue;
+        private Color mSelectionColor = Color.LightBlue;
         [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
         [Editor(typeof(WindowsFormsComponentEditor), typeof(Color))]
         [Category("Appearance"), Description("Selection Color")]
@@ -99,10 +100,6 @@ namespace CustomControls
             }
         }
 
-        private static Color[]? OriginalColors;
-        private static Color BackColorDisabled;
-        private static Color ForeColorDisabled;
-        private static Color BorderColorDisabled;
         private static bool ButtonMouseHover { get; set; }
         private static bool ButtonMouseDown { get; set; }
         private static bool ApplicationIdle = false;
@@ -110,9 +107,11 @@ namespace CustomControls
 
         public CustomButton() : base()
         {
-            SetStyle(ControlStyles.OptimizedDoubleBuffer |
+            SetStyle(ControlStyles.AllPaintingInWmPaint |
+                     ControlStyles.OptimizedDoubleBuffer |
                      ControlStyles.ResizeRedraw |
                      ControlStyles.UserPaint, true);
+            SetStyle(ControlStyles.Opaque, true);
 
             FlatStyle = FlatStyle.Flat;
             
@@ -133,7 +132,7 @@ namespace CustomControls
             ApplicationIdle = true;
             if (Parent != null)
             {
-                if (once == true)
+                if (once)
                 {
                     Control topParent = Tools.Controllers.GetTopParent(this);
                     topParent.Move -= TopParent_Move;
@@ -158,7 +157,6 @@ namespace CustomControls
 
         private void CustomButton_HandleCreated(object? sender, EventArgs e)
         {
-            OriginalColors = new Color[] { mBackColor, mForeColor, mBorderColor, mSelectionColor };
             Invalidate();
         }
 
@@ -221,152 +219,172 @@ namespace CustomControls
 
         private void CustomButton_Paint(object? sender, PaintEventArgs e)
         {
-            // Update Colors
-            OriginalColors = new Color[] { BackColor, ForeColor, BorderColor, SelectionColor };
-
             if (ApplicationIdle == false)
                 return;
 
             if (sender is Button button)
             {
-                Color mouseHoverColor = Color.Empty;
-                Color mouseDownColor = Color.Empty;
+                Color backColor = GetBackColor(button);
+                Color foreColor = GetForeColor();
+                Color borderColor = GetBorderColor();
 
-                if (DesignMode)
-                {
-                    BackColor = mBackColor;
-                    ForeColor = mForeColor;
-                    BorderColor = mBorderColor;
-                    SelectionColor = mSelectionColor;
-                }
-                else
-                {
-                    if (OriginalColors == null)
-                        return;
+                if (Parent != null)
+                    e.Graphics.Clear(Parent.BackColor);
 
-                    if (button.Enabled)
+                Rectangle rect = new(0, 0, button.ClientSize.Width - 1, button.ClientSize.Height - 1);
+
+                // Draw Button Background
+                using SolidBrush sbBG = new(backColor);
+                //e.Graphics.FillRectangle(sbBG, rect);
+                e.Graphics.FillRoundedRectangle(sbBG, rect, RoundedCorners, RoundedCorners, RoundedCorners, RoundedCorners);
+
+                // Draw Hover Button Background (// MousePosition Or Cursor.Position) (Faster than rect.Contains(button.PointToClient(MousePosition)))
+                if (button.PointToScreen(Point.Empty).X <= MousePosition.X
+                        && MousePosition.X <= (button.PointToScreen(Point.Empty).X + rect.Width)
+                        && button.PointToScreen(Point.Empty).Y <= MousePosition.Y
+                        && MousePosition.Y <= (button.PointToScreen(Point.Empty).Y + rect.Height))
+                {
+                    if (ButtonMouseHover)
                     {
-                        if (ButtonMouseHover)
+                        if (ButtonMouseDown)
                         {
-                            if (ButtonMouseDown)
-                            {
-                                if (OriginalColors[0].DarkOrLight() == "Dark")
-                                    mouseDownColor = OriginalColors[0].ChangeBrightness(0.2f);
-                                else if (OriginalColors[0].DarkOrLight() == "Light")
-                                    mouseDownColor = OriginalColors[0].ChangeBrightness(-0.2f);
-                            }
+                            Color mouseDownBackColor;
+                            if (backColor.DarkOrLight() == "Dark")
+                                mouseDownBackColor = backColor.ChangeBrightness(0.2f);
                             else
-                            {
-                                if (OriginalColors[0].DarkOrLight() == "Dark")
-                                    mouseHoverColor = OriginalColors[0].ChangeBrightness(0.1f);
-                                else if (OriginalColors[0].DarkOrLight() == "Light")
-                                    mouseHoverColor = OriginalColors[0].ChangeBrightness(-0.1f);
-                            }
+                                mouseDownBackColor = backColor.ChangeBrightness(-0.2f);
+
+                            using SolidBrush sbDBG = new(mouseDownBackColor);
+                            //e.Graphics.FillRectangle(sbDBG, rect);
+                            e.Graphics.FillRoundedRectangle(sbDBG, rect, RoundedCorners, RoundedCorners, RoundedCorners, RoundedCorners);
+                            ButtonMouseDown = false; // Fix a minor bug.
                         }
                         else
                         {
-                            BackColor = OriginalColors[0];
+                            Color mouseHoverBackColor;
+                            if (backColor.DarkOrLight() == "Dark")
+                                mouseHoverBackColor = BackColor.ChangeBrightness(0.1f);
+                            else
+                                mouseHoverBackColor = BackColor.ChangeBrightness(-0.1f);
+
+                            using SolidBrush sbHBG = new(mouseHoverBackColor);
+                            //e.Graphics.FillRectangle(sbHBG, rect);
+                            e.Graphics.FillRoundedRectangle(sbHBG, rect, RoundedCorners, RoundedCorners, RoundedCorners, RoundedCorners);
                         }
-                        
-                        ForeColor = OriginalColors[1];
-                        BorderColor = OriginalColors[2];
-                        SelectionColor = OriginalColors[3];
-                    }
-                    else
-                    {
-                        // Disabled Colors
-                        if (OriginalColors[0].DarkOrLight() == "Dark")
-                            BackColorDisabled = OriginalColors[0].ChangeBrightness(0.3f);
-                        else if (OriginalColors[0].DarkOrLight() == "Light")
-                            BackColorDisabled = OriginalColors[0].ChangeBrightness(-0.3f);
-
-                        if (OriginalColors[1].DarkOrLight() == "Dark")
-                            ForeColorDisabled = OriginalColors[1].ChangeBrightness(0.2f);
-                        else if (OriginalColors[1].DarkOrLight() == "Light")
-                            ForeColorDisabled = OriginalColors[1].ChangeBrightness(-0.2f);
-
-                        if (OriginalColors[2].DarkOrLight() == "Dark")
-                            BorderColorDisabled = OriginalColors[2].ChangeBrightness(0.3f);
-                        else if (OriginalColors[2].DarkOrLight() == "Light")
-                            BorderColorDisabled = OriginalColors[2].ChangeBrightness(-0.3f);
                     }
                 }
 
-                Color backColor;
-                Color foreColor;
-                Color borderColor;
-
-                if (button.Enabled)
+                if (button.Enabled && button.Focused)
                 {
-                    backColor = BackColor;
-                    foreColor = ForeColor;
-                    borderColor = BorderColor;
+                    rect.Inflate(-2, -2);
+                    using Pen pen = new(SelectionColor) { DashStyle = DashStyle.Dash };
+                    //if (RoundedCorners == 0)
+                    //    e.Graphics.DrawRectangle(pen, rect);
+                    //else
+                    e.Graphics.DrawRoundedRectangle(pen, rect, RoundedCorners, RoundedCorners, RoundedCorners, RoundedCorners);
+                    rect.Inflate(+2, +2);
+                }
+
+                // Draw Button Text
+                TextFormatFlags flags;
+
+                if (RightToLeft == RightToLeft.No)
+                {
+                    if (TextAlign == ContentAlignment.BottomCenter)
+                        flags = TextFormatFlags.Bottom | TextFormatFlags.HorizontalCenter;
+                    else if (TextAlign == ContentAlignment.BottomLeft)
+                        flags = TextFormatFlags.Bottom | TextFormatFlags.Left;
+                    else if (TextAlign == ContentAlignment.BottomRight)
+                        flags = TextFormatFlags.Bottom | TextFormatFlags.Right;
+                    else if (TextAlign == ContentAlignment.MiddleCenter)
+                        flags = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter;
+                    else if (TextAlign == ContentAlignment.MiddleLeft)
+                        flags = TextFormatFlags.VerticalCenter | TextFormatFlags.Left;
+                    else if (TextAlign == ContentAlignment.MiddleRight)
+                        flags = TextFormatFlags.VerticalCenter | TextFormatFlags.Right;
+                    else if (TextAlign == ContentAlignment.TopCenter)
+                        flags = TextFormatFlags.Top | TextFormatFlags.HorizontalCenter;
+                    else if (TextAlign == ContentAlignment.TopLeft)
+                        flags = TextFormatFlags.Top | TextFormatFlags.Left;
+                    else if (TextAlign == ContentAlignment.TopRight)
+                        flags = TextFormatFlags.Top | TextFormatFlags.Right;
+                    else
+                        flags = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter;
                 }
                 else
                 {
-                    backColor = BackColorDisabled;
-                    foreColor = ForeColorDisabled;
-                    borderColor = BorderColorDisabled;
+                    if (TextAlign == ContentAlignment.BottomCenter)
+                        flags = TextFormatFlags.Bottom | TextFormatFlags.HorizontalCenter;
+                    else if (TextAlign == ContentAlignment.BottomLeft)
+                        flags = TextFormatFlags.Bottom | TextFormatFlags.Right;
+                    else if (TextAlign == ContentAlignment.BottomRight)
+                        flags = TextFormatFlags.Bottom | TextFormatFlags.Left;
+                    else if (TextAlign == ContentAlignment.MiddleCenter)
+                        flags = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter;
+                    else if (TextAlign == ContentAlignment.MiddleLeft)
+                        flags = TextFormatFlags.VerticalCenter | TextFormatFlags.Right;
+                    else if (TextAlign == ContentAlignment.MiddleRight)
+                        flags = TextFormatFlags.VerticalCenter | TextFormatFlags.Left;
+                    else if (TextAlign == ContentAlignment.TopCenter)
+                        flags = TextFormatFlags.Top | TextFormatFlags.HorizontalCenter;
+                    else if (TextAlign == ContentAlignment.TopLeft)
+                        flags = TextFormatFlags.Top | TextFormatFlags.Right;
+                    else if (TextAlign == ContentAlignment.TopRight)
+                        flags = TextFormatFlags.Top | TextFormatFlags.Left;
+                    else
+                        flags = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter;
+
+                    flags |= TextFormatFlags.RightToLeft;
                 }
 
-                if (DesignMode || !DesignMode)
-                {
-                    if (Parent != null)
-                        e.Graphics.Clear(Parent.BackColor);
+                TextRenderer.DrawText(e.Graphics, button.Text, button.Font, rect, foreColor, flags);
 
-                    Rectangle rect = new(0, 0, ClientSize.Width - 1, ClientSize.Height - 1);
-
-                    // Draw Button Background
-                    using SolidBrush sbBG = new(backColor);
-                    //e.Graphics.FillRectangle(sbBG, rect);
-                    e.Graphics.FillRoundedRectangle(sbBG, rect, RoundedCorners, RoundedCorners, RoundedCorners, RoundedCorners);
-
-                    // Draw Hover Button Background (// MousePosition Or Cursor.Position)
-                    if (button.PointToScreen(Point.Empty).X <= MousePosition.X
-                            && MousePosition.X <= (button.PointToScreen(Point.Empty).X + rect.Width)
-                            && button.PointToScreen(Point.Empty).Y <= MousePosition.Y
-                            && MousePosition.Y <= (button.PointToScreen(Point.Empty).Y + rect.Height))
-                    {
-                        if (ButtonMouseHover)
-                        {
-                            if (ButtonMouseDown)
-                            {
-                                using SolidBrush sbDBG = new(mouseDownColor);
-                                //e.Graphics.FillRectangle(sbDBG, rect);
-                                e.Graphics.FillRoundedRectangle(sbDBG, rect, RoundedCorners, RoundedCorners, RoundedCorners, RoundedCorners);
-                                ButtonMouseDown = false; // Fix a minor bug.
-                            }
-                            else
-                            {
-                                using SolidBrush sbHBG = new(mouseHoverColor);
-                                //e.Graphics.FillRectangle(sbHBG, rect);
-                                e.Graphics.FillRoundedRectangle(sbHBG, rect, RoundedCorners, RoundedCorners, RoundedCorners, RoundedCorners);
-                            }
-                        }
-                    }
-
-                    if (button.Enabled && button.Focused)
-                    {
-                        rect.Inflate(-2, -2);
-                        using Pen pen = new(SelectionColor) { DashStyle = DashStyle.Dash };
-                        //if (RoundedCorners == 0)
-                        //    e.Graphics.DrawRectangle(pen, rect);
-                        //else
-                        e.Graphics.DrawRoundedRectangle(pen, rect, RoundedCorners, RoundedCorners, RoundedCorners, RoundedCorners);
-                        rect.Inflate(+2, +2);
-                    }
-
-                    // Draw Button Text
-                    TextFormatFlags flags = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter;
-                    TextRenderer.DrawText(e.Graphics, button.Text, button.Font, rect, foreColor, flags);
-
-                    // Draw Button Border
-                    using Pen penb = new(borderColor);
-                    //e.Graphics.DrawRectangle(penb, rect);
-                    e.Graphics.DrawRoundedRectangle(penb, rect, RoundedCorners, RoundedCorners, RoundedCorners, RoundedCorners);
-                }
+                // Draw Button Border
+                using Pen penb = new(borderColor);
+                //e.Graphics.DrawRectangle(penb, rect);
+                e.Graphics.DrawRoundedRectangle(penb, rect, RoundedCorners, RoundedCorners, RoundedCorners, RoundedCorners);
             }
         }
+
+        private Color GetBackColor(Button button)
+        {
+            if (button.Enabled)
+                return BackColor;
+            else
+            {
+                if (BackColor.DarkOrLight() == "Dark")
+                    return BackColor.ChangeBrightness(0.3f);
+                else
+                    return BackColor.ChangeBrightness(-0.3f);
+            }
+        }
+
+        private Color GetForeColor()
+        {
+            if (Enabled)
+                return ForeColor;
+            else
+            {
+                if (ForeColor.DarkOrLight() == "Dark")
+                    return ForeColor.ChangeBrightness(0.2f);
+                else
+                    return ForeColor.ChangeBrightness(-0.2f);
+            }
+        }
+
+        private Color GetBorderColor()
+        {
+            if (Enabled)
+                return BorderColor;
+            else
+            {
+                if (BorderColor.DarkOrLight() == "Dark")
+                    return BorderColor.ChangeBrightness(0.3f);
+                else
+                    return BorderColor.ChangeBrightness(-0.3f);
+            }
+        }
+
     }
 
     static class Extentions

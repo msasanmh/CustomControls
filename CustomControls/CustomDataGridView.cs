@@ -12,7 +12,7 @@ namespace CustomControls
         private static class Methods
         {
             [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)]
-            private extern static int SetWindowTheme(IntPtr controlHandle, string appName, string idList);
+            private extern static int SetWindowTheme(IntPtr controlHandle, string appName, string? idList);
             internal static void SetDarkControl(Control control)
             {
                 _ = SetWindowTheme(control.Handle, "DarkMode_Explorer", null);
@@ -73,7 +73,7 @@ namespace CustomControls
             }
         }
 
-        private Color mBorderColor = Color.Red;
+        private Color mBorderColor = Color.Blue;
         [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
         [Editor(typeof(WindowsFormsComponentEditor), typeof(Color))]
         [Category("Appearance"), Description("Border Color")]
@@ -90,7 +90,7 @@ namespace CustomControls
             }
         }
 
-        private Color mSelectionColor = Color.Blue;
+        private Color mSelectionColor = Color.DodgerBlue;
         [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
         [Editor(typeof(WindowsFormsComponentEditor), typeof(Color))]
         [Category("Appearance"), Description("Selection Color")]
@@ -157,16 +157,9 @@ namespace CustomControls
             }
         }
 
-        private static Color[]? OriginalColors;
+        //private static Color[]? OriginalColors;
         private static Color BackColorDarker { get; set; }
         private static Color SelectionUnfocused { get; set; }
-
-        private static Color BackColorDisabled;
-        private static Color ForeColorDisabled;
-        private static Color BorderColorDisabled;
-        private static Color GridColorDisabled;
-        private static Color CheckColorDisabled;
-        private static Color BackColorDarkerDisabled;
 
         private static bool ApplicationIdle = false;
         private bool once = true;
@@ -177,6 +170,7 @@ namespace CustomControls
                      ControlStyles.OptimizedDoubleBuffer |
                      ControlStyles.ResizeRedraw |
                      ControlStyles.UserPaint, true);
+            SetStyle(ControlStyles.Opaque, true);
 
             BorderStyle = BorderStyle.FixedSingle;
             EnableHeadersVisualStyles = false;
@@ -240,7 +234,7 @@ namespace CustomControls
                 return;
             BackColorDarker = mBackColor.ChangeBrightness(-0.3f);
             SelectionUnfocused = mSelectionColor.ChangeBrightness(0.3f);
-            OriginalColors = new Color[] { mBackColor, mForeColor, mBorderColor, mSelectionColor, mGridColor, mCheckColor, BackColorDarker, SelectionUnfocused };
+            //OriginalColors = new Color[] { mBackColor, mForeColor, mBorderColor, mSelectionColor, mGridColor, mCheckColor, BackColorDarker, SelectionUnfocused };
             var gv = sender as DataGridView;
             DataGridViewColor(gv);
             gv.Invalidate();
@@ -315,90 +309,15 @@ namespace CustomControls
         private void DataGridViewColor(DataGridView? gv)
         {
             // Update Colors
-            BackColorDarker = BackColor.ChangeBrightness(-0.3f);
-            SelectionUnfocused = SelectionColor.ChangeBrightness(0.3f);
-            OriginalColors = new Color[] { BackColor, ForeColor, BorderColor, SelectionColor, GridColor, CheckColor, BackColorDarker, SelectionUnfocused };
+            BackColorDarker = GetBackColor().ChangeBrightness(-0.3f);
+            SelectionUnfocused = GetSelectionColor().ChangeBrightness(0.3f);
+            //OriginalColors = new Color[] { BackColor, ForeColor, BorderColor, SelectionColor, GridColor, CheckColor, BackColorDarker, SelectionUnfocused };
             
-            if (DesignMode)
-            {
-                BackColor = mBackColor;
-                ForeColor = mForeColor;
-                BorderColor = mBorderColor;
-                SelectionColor = mSelectionColor;
-                GridColor = mGridColor;
-                CheckColor = mCheckColor;
-            }
-            else
-            {
-                if (OriginalColors != null)
-                {
-                    if (gv.Enabled == true)
-                    {
-                        BackColor = OriginalColors[0];
-                        ForeColor = OriginalColors[1];
-                        BorderColor = OriginalColors[2];
-                        SelectionColor = OriginalColors[3];
-                        GridColor = OriginalColors[4];
-                        CheckColor = OriginalColors[5];
-                        BackColorDarker = OriginalColors[6];
-                        SelectionUnfocused = OriginalColors[7];
-                    }
-                    else
-                    {
-                        // Disabled Colors
-                        if (OriginalColors[0].DarkOrLight() == "Dark")
-                            BackColorDisabled = OriginalColors[0].ChangeBrightness(0.3f);
-                        else if (OriginalColors[0].DarkOrLight() == "Light")
-                            BackColorDisabled = OriginalColors[0].ChangeBrightness(-0.3f);
+            Color backColor = GetBackColor();
+            Color foreColor = GetForeColor();
+            Color gridColor = GetGridColor();
+            Color backColorDarker = BackColorDarker;
 
-                        if (OriginalColors[1].DarkOrLight() == "Dark")
-                            ForeColorDisabled = OriginalColors[1].ChangeBrightness(0.2f);
-                        else if (OriginalColors[1].DarkOrLight() == "Light")
-                            ForeColorDisabled = OriginalColors[1].ChangeBrightness(-0.2f);
-
-                        if (OriginalColors[2].DarkOrLight() == "Dark")
-                            BorderColorDisabled = OriginalColors[2].ChangeBrightness(0.3f);
-                        else if (OriginalColors[2].DarkOrLight() == "Light")
-                            BorderColorDisabled = OriginalColors[2].ChangeBrightness(-0.3f);
-
-                        if (OriginalColors[4].DarkOrLight() == "Dark")
-                            GridColorDisabled = OriginalColors[4].ChangeBrightness(0.3f);
-                        else if (OriginalColors[4].DarkOrLight() == "Light")
-                            GridColorDisabled = OriginalColors[4].ChangeBrightness(-0.3f);
-
-                        if (OriginalColors[5].DarkOrLight() == "Dark")
-                            CheckColorDisabled = OriginalColors[5].ChangeBrightness(0.3f);
-                        else if (OriginalColors[5].DarkOrLight() == "Light")
-                            CheckColorDisabled = OriginalColors[5].ChangeBrightness(-0.3f);
-
-                        if (OriginalColors[6].DarkOrLight() == "Dark")
-                            BackColorDarkerDisabled = OriginalColors[6].ChangeBrightness(0.3f);
-                        else if (OriginalColors[6].DarkOrLight() == "Light")
-                            BackColorDarkerDisabled = OriginalColors[6].ChangeBrightness(-0.3f);
-                    }
-                }
-            }
-
-            Color backColor;
-            Color foreColor;
-            Color gridColor;
-            Color backColorDarker;
-
-            if (gv.Enabled == true)
-            {
-                backColor = BackColor;
-                foreColor = ForeColor;
-                gridColor = GridColor;
-                backColorDarker = BackColorDarker;
-            }
-            else
-            {
-                backColor = BackColorDisabled;
-                foreColor = ForeColorDisabled;
-                gridColor = GridColorDisabled;
-                backColorDarker = BackColorDarkerDisabled;
-            }
-            
             gv.BackgroundColor = backColor;
             gv.GridColor = gridColor;
             gv.ColumnHeadersDefaultCellStyle.BackColor = backColorDarker;
@@ -524,175 +443,153 @@ namespace CustomControls
             // Update Colors
             DataGridViewColor(gv);
 
-            Color backColor;
-            Color foreColor;
-            Color checkColor;
-            Color borderColor;
-            Color gridColor;
-            Color backColorDarker;
-
-            if (gv.Enabled)
-            {
-                backColor = BackColor;
-                foreColor = ForeColor;
-                checkColor = CheckColor;
-                borderColor = BorderColor;
-                gridColor = GridColor;
-                backColorDarker = BackColorDarker;
-            }
-            else
-            {
-                backColor = BackColorDisabled;
-                foreColor = ForeColorDisabled;
-                checkColor = CheckColorDisabled;
-                borderColor = BorderColorDisabled;
-                gridColor = GridColorDisabled;
-                backColorDarker = BackColorDarkerDisabled;
-            }
+            Color backColor = GetBackColor();
+            Color foreColor = GetForeColor();
+            Color borderColor = GetBorderColor();
+            Color gridColor = GetGridColor();
+            Color checkColor = GetCheckColor();
+            Color backColorDarker = BackColorDarker;
 
             if (ApplicationIdle == false)
                 return;
 
-            if (DesignMode || !DesignMode)
+            if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
             {
-                if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
+                var cell = gv[e.ColumnIndex, e.RowIndex];
+
+                // DataGridViewCheckBoxCell
+                if (cell.GetType().ToString().Contains("CheckBox", StringComparison.OrdinalIgnoreCase))
                 {
-                    var cell = gv[e.ColumnIndex, e.RowIndex];
-                    
-                    // DataGridViewCheckBoxCell
-                    if (cell.GetType().ToString().Contains("CheckBox", StringComparison.OrdinalIgnoreCase))
+                    if (cell.Value is DBNull)
+                        cell.Value = false;
+
+                    Rectangle rectCell = gv.GetCellDisplayRectangle(e.ColumnIndex, e.RowIndex, true);
+                    var checkBox = cell as DataGridViewCheckBoxCell;
+                    e.Handled = true;
+                    e.PaintBackground(rectCell, true);
+
+                    rectCell = new(rectCell.X, rectCell.Y, rectCell.Width - 2, rectCell.Height - 2);
+                    int checkSize = 13;
+                    checkSize = Math.Min(checkSize, rectCell.Width);
+                    checkSize = Math.Min(checkSize, rectCell.Height);
+                    int centerX = rectCell.X + rectCell.Width / 2 - checkSize / 2;
+                    int centerY = rectCell.Y + rectCell.Height / 2 - checkSize / 2;
+
+                    rectCell = new(centerX, centerY, checkSize, checkSize);
+
+                    // Fill Check Rect
+                    using SolidBrush brush1 = new(backColor);
+                    e.Graphics.FillRectangle(brush1, rectCell);
+
+                    // Draw Check
+                    if (cell.Value != DBNull.Value)
                     {
-                        if (cell.Value is DBNull)
-                            cell.Value = false;
+                        int rectCheck = rectCell.Height - 1;
+                        if (rectCheck <= 0)
+                            rectCheck = 1;
 
-                        Rectangle rectCell = gv.GetCellDisplayRectangle(e.ColumnIndex, e.RowIndex, true);
-                        var checkBox = cell as DataGridViewCheckBoxCell;
-                        e.Handled = true;
-                        e.PaintBackground(rectCell, true);
-
-                        rectCell = new(rectCell.X, rectCell.Y, rectCell.Width - 2, rectCell.Height - 2);
-                        int checkSize = 13;
-                        checkSize = Math.Min(checkSize, rectCell.Width);
-                        checkSize = Math.Min(checkSize, rectCell.Height);
-                        int centerX = rectCell.X + rectCell.Width / 2 - checkSize / 2;
-                        int centerY = rectCell.Y + rectCell.Height / 2 - checkSize / 2;
-
-                        rectCell = new(centerX, centerY, checkSize, checkSize);
-
-                        // Fill Check Rect
-                        using SolidBrush brush1 = new(backColor);
-                        e.Graphics.FillRectangle(brush1, rectCell);
-
-                        // Draw Check
-                        if (cell.Value != DBNull.Value)
+                        if (rectCheck > 1)
                         {
-                            int rectCheck = rectCell.Height - 1;
-                            if (rectCheck <= 0)
-                                rectCheck = 1;
-
-                            if (rectCheck > 1)
+                            if (cell.Value is null or "null")
                             {
-                                if (cell.Value is null or "null")
+                                if (checkBox.ThreeState)
                                 {
-                                    if (checkBox.ThreeState)
-                                    {
-                                        // Draw Indeterminate
-                                        using SolidBrush sb = new(checkColor);
-                                        rectCell.Inflate(-2, -2);
-                                        e.Graphics.FillRectangle(sb, rectCell);
-                                        rectCell.Inflate(+2, +2);
-                                    }
+                                    // Draw Indeterminate
+                                    using SolidBrush sb = new(checkColor);
+                                    rectCell.Inflate(-2, -2);
+                                    e.Graphics.FillRectangle(sb, rectCell);
+                                    rectCell.Inflate(+2, +2);
                                 }
-                                else
-                                {
-                                    if (cell.Value is null)
-                                        cell.Value = false;
+                            }
+                            else
+                            {
+                                if (cell.Value is null)
+                                    cell.Value = false;
 
-                                    if (cell.Value is not null)
+                                if (cell.Value is not null)
+                                {
+                                    if (Convert.ToBoolean(cell.Value) == true)
                                     {
-                                        if (Convert.ToBoolean(cell.Value) == true)
-                                        {
-                                            // Draw Check
-                                            using var p = new Pen(checkColor, 2);
-                                            rectCell.Inflate(-2, -2);
-                                            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                                            e.Graphics.DrawLines(p, new Point[] { new Point(rectCell.Left, rectCell.Bottom - rectCell.Height / 2), new Point(rectCell.Left + rectCell.Width / 3, rectCell.Bottom), new Point(rectCell.Right, rectCell.Top) });
-                                            e.Graphics.SmoothingMode = SmoothingMode.Default;
-                                            rectCell.Inflate(+2, +2);
-                                        }
+                                        // Draw Check
+                                        using var p = new Pen(checkColor, 2);
+                                        rectCell.Inflate(-2, -2);
+                                        e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                                        e.Graphics.DrawLines(p, new Point[] { new Point(rectCell.Left, rectCell.Bottom - rectCell.Height / 2), new Point(rectCell.Left + rectCell.Width / 3, rectCell.Bottom), new Point(rectCell.Right, rectCell.Top) });
+                                        e.Graphics.SmoothingMode = SmoothingMode.Default;
+                                        rectCell.Inflate(+2, +2);
                                     }
                                 }
                             }
                         }
-                        
-                        // Draw Check Rect (Check Border)
-                        ControlPaint.DrawBorder(e.Graphics, rectCell, borderColor, ButtonBorderStyle.Solid);
                     }
 
-                    // DataGridViewComboBoxCell
-                    if (cell.GetType().ToString().Contains("ComboBox", StringComparison.OrdinalIgnoreCase))
-                    {
-                        Rectangle rectCell = gv.GetCellDisplayRectangle(e.ColumnIndex, e.RowIndex, true);
-                        var comboBox = cell as DataGridViewComboBoxCell;
-                        int myPadding = 10;
-                        e.Handled = true;
-                        e.PaintBackground(rectCell, true);
-                        rectCell = new(rectCell.X, rectCell.Y, rectCell.Width - 1, rectCell.Height - 1);
-
-                        // Fill Background
-                        using SolidBrush sb = new(backColor);
-                        e.Graphics.FillRectangle(sb, rectCell);
-
-                        // Draw Border
-                        using Pen p = new(gridColor, 1);
-                        Rectangle modRect1 = new(rectCell.Left, rectCell.Top, rectCell.Width - 1, rectCell.Height - 1);
-                        e.Graphics.DrawRectangle(p, modRect1);
-
-                        // Fill Arrow Button Back Color
-                        using SolidBrush sb2 = new(backColorDarker);
-                        rectCell = new(rectCell.X + 1, rectCell.Y, rectCell.Width - 1, rectCell.Height);
-                        int x = (rectCell.X + rectCell.Width) - 15;
-                        int y = rectCell.Y + 1;
-                        int buttonWidth = (rectCell.X + rectCell.Width) - x - 1;
-                        int buttonHeight = rectCell.Height - 2;
-                        Rectangle modRect2 = new(x, y, buttonWidth, buttonHeight);
-                        e.Graphics.FillRectangle(sb2, modRect2);
-
-                        // Draw Arrow Button Icon
-                        var pth = new GraphicsPath();
-                        var TopLeft = new PointF(x + buttonWidth * 1 / 5, y + buttonHeight * 2 / 5);
-                        var TopRight = new PointF(x + buttonWidth * 4 / 5, y + buttonHeight * 2 / 5);
-                        var Bottom = new PointF(x + buttonWidth / 2, y + buttonHeight * 3 / 5);
-                        pth.AddLine(TopLeft, TopRight);
-                        pth.AddLine(TopRight, Bottom);
-                        // Determine the Arrow's Color.
-                        using SolidBrush arrowBrush = new(foreColor);
-                        // Draw the Arrow
-                        e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                        e.Graphics.FillPath(arrowBrush, pth);
-                        e.Graphics.SmoothingMode = SmoothingMode.Default;
-
-                        var text = comboBox.Value != null ? comboBox.Value.ToString() : Text;
-
-                        using SolidBrush b = new(foreColor);
-                        int padding = 2;
-                        int arrowWidth = (int)(TopRight.X - TopLeft.X);
-                        Rectangle modRect3 = new(rectCell.Left + padding,
-                                                    rectCell.Top + padding,
-                                                    rectCell.Width - arrowWidth - (myPadding / 2) - (padding * 2),
-                                                    rectCell.Height - (padding * 2));
-
-                        var stringFormat = new StringFormat
-                        {
-                            LineAlignment = StringAlignment.Center,
-                            Alignment = StringAlignment.Near,
-                            FormatFlags = StringFormatFlags.NoWrap,
-                            Trimming = StringTrimming.EllipsisCharacter
-                        };
-                        e.Graphics.DrawString(text, Font, b, modRect3, stringFormat);
-                    }
-
+                    // Draw Check Rect (Check Border)
+                    ControlPaint.DrawBorder(e.Graphics, rectCell, borderColor, ButtonBorderStyle.Solid);
                 }
+
+                // DataGridViewComboBoxCell
+                if (cell.GetType().ToString().Contains("ComboBox", StringComparison.OrdinalIgnoreCase))
+                {
+                    Rectangle rectCell = gv.GetCellDisplayRectangle(e.ColumnIndex, e.RowIndex, true);
+                    var comboBox = cell as DataGridViewComboBoxCell;
+                    int myPadding = 10;
+                    e.Handled = true;
+                    e.PaintBackground(rectCell, true);
+                    rectCell = new(rectCell.X, rectCell.Y, rectCell.Width - 1, rectCell.Height - 1);
+
+                    // Fill Background
+                    using SolidBrush sb = new(backColor);
+                    e.Graphics.FillRectangle(sb, rectCell);
+
+                    // Draw Border
+                    using Pen p = new(gridColor, 1);
+                    Rectangle modRect1 = new(rectCell.Left, rectCell.Top, rectCell.Width - 1, rectCell.Height - 1);
+                    e.Graphics.DrawRectangle(p, modRect1);
+
+                    // Fill Arrow Button Back Color
+                    using SolidBrush sb2 = new(backColorDarker);
+                    rectCell = new(rectCell.X + 1, rectCell.Y, rectCell.Width - 1, rectCell.Height);
+                    int x = (rectCell.X + rectCell.Width) - 15;
+                    int y = rectCell.Y + 1;
+                    int buttonWidth = (rectCell.X + rectCell.Width) - x - 1;
+                    int buttonHeight = rectCell.Height - 2;
+                    Rectangle modRect2 = new(x, y, buttonWidth, buttonHeight);
+                    e.Graphics.FillRectangle(sb2, modRect2);
+
+                    // Draw Arrow Button Icon
+                    var pth = new GraphicsPath();
+                    var TopLeft = new PointF(x + buttonWidth * 1 / 5, y + buttonHeight * 2 / 5);
+                    var TopRight = new PointF(x + buttonWidth * 4 / 5, y + buttonHeight * 2 / 5);
+                    var Bottom = new PointF(x + buttonWidth / 2, y + buttonHeight * 3 / 5);
+                    pth.AddLine(TopLeft, TopRight);
+                    pth.AddLine(TopRight, Bottom);
+                    // Determine the Arrow's Color.
+                    using SolidBrush arrowBrush = new(foreColor);
+                    // Draw the Arrow
+                    e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                    e.Graphics.FillPath(arrowBrush, pth);
+                    e.Graphics.SmoothingMode = SmoothingMode.Default;
+
+                    var text = comboBox.Value != null ? comboBox.Value.ToString() : Text;
+
+                    using SolidBrush b = new(foreColor);
+                    int padding = 2;
+                    int arrowWidth = (int)(TopRight.X - TopLeft.X);
+                    Rectangle modRect3 = new(rectCell.Left + padding,
+                                                rectCell.Top + padding,
+                                                rectCell.Width - arrowWidth - (myPadding / 2) - (padding * 2),
+                                                rectCell.Height - (padding * 2));
+
+                    var stringFormat = new StringFormat
+                    {
+                        LineAlignment = StringAlignment.Center,
+                        Alignment = StringAlignment.Near,
+                        FormatFlags = StringFormatFlags.NoWrap,
+                        Trimming = StringTrimming.EllipsisCharacter
+                    };
+                    e.Graphics.DrawString(text, Font, b, modRect3, stringFormat);
+                }
+
             }
         }
 
@@ -705,35 +602,28 @@ namespace CustomControls
             if (ApplicationIdle == false)
                 return;
 
-            if (DesignMode || !DesignMode)
+            Rectangle rectGv = new(0, 0, ClientSize.Width, ClientSize.Height);
+
+            Color borderColor = GetBorderColor();
+
+            if (BorderStyle == BorderStyle.FixedSingle)
+                ControlPaint.DrawBorder(e.Graphics, rectGv, borderColor, ButtonBorderStyle.Solid);
+            else if (BorderStyle == BorderStyle.Fixed3D)
             {
-                Rectangle rectGv = new(0, 0, ClientSize.Width, ClientSize.Height);
-
-                Color borderColor;
-                if (gv.Enabled)
-                    borderColor = BorderColor;
+                Color secondBorderColor;
+                if (borderColor.DarkOrLight() == "Dark")
+                    secondBorderColor = borderColor.ChangeBrightness(0.6f);
                 else
-                    borderColor = BorderColorDisabled;
+                    secondBorderColor = borderColor.ChangeBrightness(-0.6f);
 
-                if (BorderStyle == BorderStyle.FixedSingle)
-                    ControlPaint.DrawBorder(e.Graphics, rectGv, borderColor, ButtonBorderStyle.Solid);
-                else if (BorderStyle == BorderStyle.Fixed3D)
-                {
-                    Color secondBorderColor;
-                    if (borderColor.DarkOrLight() == "Dark")
-                        secondBorderColor = borderColor.ChangeBrightness(0.6f);
-                    else
-                        secondBorderColor = borderColor.ChangeBrightness(-0.6f);
+                Rectangle rect3D = rectGv;
+                ControlPaint.DrawBorder(e.Graphics, rect3D, secondBorderColor, ButtonBorderStyle.Solid);
 
-                    Rectangle rect3D = rectGv;
-                    ControlPaint.DrawBorder(e.Graphics, rect3D, secondBorderColor, ButtonBorderStyle.Solid);
+                rect3D = new(rectGv.X + 1, rectGv.Y + 1, rectGv.Width - 1, rectGv.Height - 1);
+                ControlPaint.DrawBorder(e.Graphics, rect3D, secondBorderColor, ButtonBorderStyle.Solid);
 
-                    rect3D = new(rectGv.X + 1, rectGv.Y + 1, rectGv.Width - 1, rectGv.Height - 1);
-                    ControlPaint.DrawBorder(e.Graphics, rect3D, secondBorderColor, ButtonBorderStyle.Solid);
-
-                    rect3D = new(rectGv.X, rectGv.Y, rectGv.Width - 1, rectGv.Height - 1);
-                    ControlPaint.DrawBorder(e.Graphics, rect3D, borderColor, ButtonBorderStyle.Solid);
-                }
+                rect3D = new(rectGv.X, rectGv.Y, rectGv.Width - 1, rectGv.Height - 1);
+                ControlPaint.DrawBorder(e.Graphics, rect3D, borderColor, ButtonBorderStyle.Solid);
             }
         }
 
@@ -794,6 +684,84 @@ namespace CustomControls
                 }
 
                 
+            }
+        }
+
+        private Color GetBackColor()
+        {
+            if (Enabled)
+                return BackColor;
+            else
+            {
+                if (BackColor.DarkOrLight() == "Dark")
+                    return BackColor.ChangeBrightness(0.3f);
+                else
+                    return BackColor.ChangeBrightness(-0.3f);
+            }
+        }
+
+        private Color GetForeColor()
+        {
+            if (Enabled)
+                return ForeColor;
+            else
+            {
+                if (ForeColor.DarkOrLight() == "Dark")
+                    return ForeColor.ChangeBrightness(0.2f);
+                else
+                    return ForeColor.ChangeBrightness(-0.2f);
+            }
+        }
+
+        private Color GetBorderColor()
+        {
+            if (Enabled)
+                return BorderColor;
+            else
+            {
+                if (BorderColor.DarkOrLight() == "Dark")
+                    return BorderColor.ChangeBrightness(0.3f);
+                else
+                    return BorderColor.ChangeBrightness(-0.3f);
+            }
+        }
+
+        private Color GetSelectionColor()
+        {
+            if (Enabled)
+                return SelectionColor;
+            else
+            {
+                if (SelectionColor.DarkOrLight() == "Dark")
+                    return SelectionColor.ChangeBrightness(0.3f);
+                else
+                    return SelectionColor.ChangeBrightness(-0.3f);
+            }
+        }
+
+        private Color GetGridColor()
+        {
+            if (Enabled)
+                return GridColor;
+            else
+            {
+                if (GridColor.DarkOrLight() == "Dark")
+                    return GridColor.ChangeBrightness(0.3f);
+                else
+                    return GridColor.ChangeBrightness(-0.3f);
+            }
+        }
+
+        private Color GetCheckColor()
+        {
+            if (Enabled)
+                return CheckColor;
+            else
+            {
+                if (CheckColor.DarkOrLight() == "Dark")
+                    return CheckColor.ChangeBrightness(0.3f);
+                else
+                    return CheckColor.ChangeBrightness(-0.3f);
             }
         }
 

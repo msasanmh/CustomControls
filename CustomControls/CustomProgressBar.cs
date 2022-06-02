@@ -10,40 +10,6 @@ namespace CustomControls
 {
     public class CustomProgressBar : ProgressBar
     {
-        private Color mBackColor = Color.DimGray;
-        [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
-        [Editor(typeof(WindowsFormsComponentEditor), typeof(Color))]
-        [Category("Appearance"), Description("Back Color")]
-        public override Color BackColor
-        {
-            get { return mBackColor; }
-            set
-            {
-                if (mBackColor != value)
-                {
-                    mBackColor = value;
-                    Invalidate();
-                }
-            }
-        }
-
-        private Color mForeColor = Color.Black;
-        [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
-        [Editor(typeof(WindowsFormsComponentEditor), typeof(Color))]
-        [Category("Appearance"), Description("Fore Color")]
-        public override Color ForeColor
-        {
-            get { return mForeColor; }
-            set
-            {
-                if (mForeColor != value)
-                {
-                    mForeColor = value;
-                    Invalidate();
-                }
-            }
-        }
-
         private Color mBorderColor = Color.Red;
         [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
         [Editor(typeof(WindowsFormsComponentEditor), typeof(Color))]
@@ -77,13 +43,6 @@ namespace CustomControls
                 }
             }
         }
-
-        private static Color[]? OriginalColors;
-
-        private static Color BackColorDisabled;
-        private static Color ForeColorDisabled;
-        private static Color BorderColorDisabled;
-        private static Color ChunksColorDisabled;
 
         private string mCustomText = string.Empty;
         [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
@@ -182,7 +141,6 @@ namespace CustomControls
 
         private void CustomProgressBar_HandleCreated(object? sender, EventArgs e)
         {
-            OriginalColors = new Color[] { mBackColor, mForeColor, mBorderColor, mChunksColor };
             Invalidate();
         }
 
@@ -198,76 +156,14 @@ namespace CustomControls
 
         protected override void OnPaint(PaintEventArgs e)
         {
-            // Update Colors
-            OriginalColors = new Color[] { BackColor, ForeColor, BorderColor, ChunksColor };
-
             if (ApplicationIdle == false)
                 return;
 
-            if (DesignMode)
-            {
-                BackColor = mBackColor;
-                ForeColor = mForeColor;
-                BorderColor = mBorderColor;
-                ChunksColor = mChunksColor;
-            }
-            else
-            {
-                if (OriginalColors == null)
-                    return;
-
-                if (Enabled)
-                {
-                    BackColor = OriginalColors[0];
-                    ForeColor = OriginalColors[1];
-                    BorderColor = OriginalColors[2];
-                    ChunksColor = OriginalColors[3];
-                }
-                else
-                {
-                    // Disabled Colors
-                    if (OriginalColors[0].DarkOrLight() == "Dark")
-                        BackColorDisabled = OriginalColors[0].ChangeBrightness(0.3f);
-                    else if (OriginalColors[0].DarkOrLight() == "Light")
-                        BackColorDisabled = OriginalColors[0].ChangeBrightness(-0.3f);
-
-                    if (OriginalColors[1].DarkOrLight() == "Dark")
-                        ForeColorDisabled = OriginalColors[1].ChangeBrightness(0.2f);
-                    else if (OriginalColors[1].DarkOrLight() == "Light")
-                        ForeColorDisabled = OriginalColors[1].ChangeBrightness(-0.2f);
-
-                    if (OriginalColors[2].DarkOrLight() == "Dark")
-                        BorderColorDisabled = OriginalColors[2].ChangeBrightness(0.3f);
-                    else if (OriginalColors[2].DarkOrLight() == "Light")
-                        BorderColorDisabled = OriginalColors[2].ChangeBrightness(-0.3f);
-
-                    if (OriginalColors[3].DarkOrLight() == "Dark")
-                        ChunksColorDisabled = OriginalColors[3].ChangeBrightness(0.3f);
-                    else if (OriginalColors[3].DarkOrLight() == "Light")
-                        ChunksColorDisabled = OriginalColors[3].ChangeBrightness(-0.3f);
-                }
-            }
-
-            Color backColor;
-            Color foreColor;
-            Color borderColor;
-            Color chunksColor;
+            Color backColor = GetBackColor();
+            Color foreColor = GetForeColor();
+            Color borderColor = GetBorderColor();
+            Color chunksColor = GetChunksColor();
             Color chunksColorGradient;
-
-            if (Enabled)
-            {
-                backColor = BackColor;
-                foreColor = ForeColor;
-                borderColor = BorderColor;
-                chunksColor = ChunksColor;
-            }
-            else
-            {
-                backColor = BackColorDisabled;
-                foreColor = ForeColorDisabled;
-                borderColor = BorderColorDisabled;
-                chunksColor = ChunksColorDisabled;
-            }
 
             if (chunksColor.DarkOrLight() == "Dark")
                 chunksColorGradient = chunksColor.ChangeBrightness(0.5f);
@@ -401,5 +297,58 @@ namespace CustomControls
                 }
             }
         }
+
+        private Color GetBackColor()
+        {
+            if (Enabled)
+                return BackColor;
+            else
+            {
+                if (BackColor.DarkOrLight() == "Dark")
+                    return BackColor.ChangeBrightness(0.3f);
+                else
+                    return BackColor.ChangeBrightness(-0.3f);
+            }
+        }
+
+        private Color GetForeColor()
+        {
+            if (Enabled)
+                return ForeColor;
+            else
+            {
+                if (ForeColor.DarkOrLight() == "Dark")
+                    return ForeColor.ChangeBrightness(0.2f);
+                else
+                    return ForeColor.ChangeBrightness(-0.2f);
+            }
+        }
+
+        private Color GetBorderColor()
+        {
+            if (Enabled)
+                return BorderColor;
+            else
+            {
+                if (BorderColor.DarkOrLight() == "Dark")
+                    return BorderColor.ChangeBrightness(0.3f);
+                else
+                    return BorderColor.ChangeBrightness(-0.3f);
+            }
+        }
+
+        private Color GetChunksColor()
+        {
+            if (Enabled)
+                return ChunksColor;
+            else
+            {
+                if (ChunksColor.DarkOrLight() == "Dark")
+                    return ChunksColor.ChangeBrightness(0.3f);
+                else
+                    return ChunksColor.ChangeBrightness(-0.3f);
+            }
+        }
+
     }
 }

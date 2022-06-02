@@ -53,7 +53,7 @@ namespace CustomControls
             }
         }
 
-        private Color mBorderColor = Color.Red;
+        private Color mBorderColor = Color.Blue;
         [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
         [Editor(typeof(WindowsFormsComponentEditor), typeof(Color))]
         [Category("Appearance"), Description("Border Color")]
@@ -87,7 +87,7 @@ namespace CustomControls
             }
         }
 
-        private Color mSelectionColor = Color.Blue;
+        private Color mSelectionColor = Color.LightBlue;
         [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
         [Editor(typeof(WindowsFormsComponentEditor), typeof(Color))]
         [Category("Appearance"), Description("Selection Color")]
@@ -104,16 +104,12 @@ namespace CustomControls
             }
         }
 
-        private static Color[]? OriginalColors;
-        private static Color BackColorDisabled;
-        private static Color ForeColorDisabled;
-        private static Color BorderColorDisabled;
-        private static Color CheckColorDisabled;
         private static bool ApplicationIdle = false;
         private bool once = true;
         public CustomCheckBox() : base()
         {
-            SetStyle(ControlStyles.OptimizedDoubleBuffer |
+            SetStyle(ControlStyles.AllPaintingInWmPaint |
+                     ControlStyles.OptimizedDoubleBuffer |
                      ControlStyles.ResizeRedraw |
                      ControlStyles.UserPaint, true);
             SetStyle(ControlStyles.Opaque, true);
@@ -158,7 +154,6 @@ namespace CustomControls
 
         private void CustomCheckBox_HandleCreated(object? sender, EventArgs e)
         {
-            OriginalColors = new Color[] { mBackColor, mForeColor, mBorderColor, mCheckColor };
             Invalidate();
         }
 
@@ -189,83 +184,15 @@ namespace CustomControls
 
         private void CustomCheckBox_Paint(object? sender, PaintEventArgs e)
         {
-            // Update Colors
-            OriginalColors = new Color[] { BackColor, ForeColor, BorderColor, CheckColor };
-
             if (ApplicationIdle == false)
                 return;
 
             if (sender is CheckBox checkBox)
             {
-                if (DesignMode)
-                {
-                    BackColor = mBackColor;
-                    ForeColor = mForeColor;
-                    BorderColor = mBorderColor;
-                    CheckColor = mCheckColor;
-                    SelectionColor = mSelectionColor;
-                }
-                else
-                {
-                    if (OriginalColors == null)
-                        return;
-
-                    if (checkBox.Enabled)
-                    {
-                        BackColor = OriginalColors[0];
-                        ForeColor = OriginalColors[1];
-                        BorderColor = OriginalColors[2];
-                        CheckColor = OriginalColors[3];
-                    }
-                    else
-                    {
-                        // Disabled Colors
-                        if (BackColor.DarkOrLight() == "Dark")
-                            BackColorDisabled = OriginalColors[0].ChangeBrightness(0.3f);
-                        else if (BackColor.DarkOrLight() == "Light")
-                            BackColorDisabled = OriginalColors[0].ChangeBrightness(-0.3f);
-
-                        if (ForeColor.DarkOrLight() == "Dark")
-                            ForeColorDisabled = OriginalColors[1].ChangeBrightness(0.2f);
-                        else if (ForeColor.DarkOrLight() == "Light")
-                            ForeColorDisabled = OriginalColors[1].ChangeBrightness(-0.2f);
-
-                        if (BorderColor.DarkOrLight() == "Dark")
-                            BorderColorDisabled = OriginalColors[2].ChangeBrightness(0.3f);
-                        else if (BorderColor.DarkOrLight() == "Light")
-                            BorderColorDisabled = OriginalColors[2].ChangeBrightness(-0.3f);
-
-                        if (CheckColor.DarkOrLight() == "Dark")
-                            CheckColorDisabled = OriginalColors[3].ChangeBrightness(0.3f);
-                        else if (CheckColor.DarkOrLight() == "Light")
-                            CheckColorDisabled = OriginalColors[3].ChangeBrightness(-0.3f);
-                    }
-                }
-
-                Color backColor;
-                Color foreColor;
-                Color borderColor;
-                Color checkColor;
-
-                if (checkBox.Enabled)
-                {
-                    backColor = BackColor;
-                    foreColor = ForeColor;
-                    borderColor = BorderColor;
-                    checkColor = CheckColor;
-                }
-                else
-                {
-                    backColor = BackColor;
-                    if (checkBox.Parent != null)
-                    {
-                        if (checkBox.Parent.Enabled == false)
-                            backColor = BackColorDisabled;
-                    }
-                    foreColor = ForeColorDisabled;
-                    borderColor = BorderColorDisabled;
-                    checkColor = CheckColorDisabled;
-                }
+                Color backColor = GetBackColor(checkBox);
+                Color foreColor = GetForeColor();
+                Color borderColor = GetBorderColor();
+                Color checkColor = GetCheckColor();
 
                 e.Graphics.Clear(backColor);
                 checkBox.Appearance = Appearance.Button;
@@ -349,5 +276,73 @@ namespace CustomControls
                 }
             }
         }
+
+        private Color GetBackColor(CheckBox checkBox)
+        {
+            if (checkBox.Enabled)
+                return BackColor;
+            else
+            {
+                if (checkBox.Parent != null)
+                {
+                    if (checkBox.Parent.Enabled)
+                        return BackColor;
+                    else
+                        return GetDisabledColor();
+                }
+                else
+                {
+                    return GetDisabledColor();
+                }
+
+                Color GetDisabledColor()
+                {
+                    if (BackColor.DarkOrLight() == "Dark")
+                        return BackColor.ChangeBrightness(0.3f);
+                    else
+                        return BackColor.ChangeBrightness(-0.3f);
+                }
+            }
+        }
+
+        private Color GetForeColor()
+        {
+            if (Enabled)
+                return ForeColor;
+            else
+            {
+                if (ForeColor.DarkOrLight() == "Dark")
+                    return ForeColor.ChangeBrightness(0.2f);
+                else
+                    return ForeColor.ChangeBrightness(-0.2f);
+            }
+        }
+
+        private Color GetBorderColor()
+        {
+            if (Enabled)
+                return BorderColor;
+            else
+            {
+                if (BorderColor.DarkOrLight() == "Dark")
+                    return BorderColor.ChangeBrightness(0.3f);
+                else
+                    return BorderColor.ChangeBrightness(-0.3f);
+            }
+        }
+
+        private Color GetCheckColor()
+        {
+            if (Enabled)
+                return CheckColor;
+            else
+            {
+                if (CheckColor.DarkOrLight() == "Dark")
+                    return CheckColor.ChangeBrightness(0.3f);
+                else
+                    return CheckColor.ChangeBrightness(-0.3f);
+            }
+        }
+
     }
 }
