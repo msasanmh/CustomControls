@@ -263,6 +263,9 @@ namespace CustomControls
             // Rectangle
             Rectangle rect = ClientRectangle;
 
+            // Mouse Position
+            Point mP = PointToClient(MousePosition);
+
             // Paint Background
             using SolidBrush sb = new(backColor);
             e.Graphics.FillRectangle(sb, rect);
@@ -283,6 +286,14 @@ namespace CustomControls
             // Paint Button
             using SolidBrush buttonBrush = new(backColorDarker);
             e.Graphics.FillRectangle(buttonBrush, rectButton);
+
+            // Paint MouseOver Button
+            if (Enabled && rectButton.Contains(mP))
+            {
+                Color hoverColor = backColor.DarkOrLight() == "Dark" ? backColor.ChangeBrightness(0.3f) : backColor.ChangeBrightness(-0.3f);
+                using SolidBrush sbHover = new(hoverColor);
+                e.Graphics.FillRectangle(sbHover, rectButton);
+            }
 
             // Arrow Points
             Point center = new(rectButton.X + rectButton.Width / 2, rectButton.Y + rectButton.Height / 2);
