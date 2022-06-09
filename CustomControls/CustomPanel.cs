@@ -14,7 +14,7 @@ namespace CustomControls
         private static class Methods
         {
             [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)]
-            private extern static int SetWindowTheme(IntPtr controlHandle, string appName, string idList);
+            private extern static int SetWindowTheme(IntPtr controlHandle, string appName, string? idList);
             internal static void SetDarkControl(Control control)
             {
                 _ = SetWindowTheme(control.Handle, "DarkMode_Explorer", null);
@@ -109,10 +109,6 @@ namespace CustomControls
             }
         }
 
-        private static Color[]? OriginalColors;
-        private static Color BackColorDisabled;
-        private static Color ForeColorDisabled;
-        private static Color BorderColorDisabled;
         private static bool ApplicationIdle = false;
         private bool once = true;
 
@@ -225,7 +221,7 @@ namespace CustomControls
             {
                 if (once == true)
                 {
-                    Control topParent = Tools.Controllers.GetTopParent(this);
+                    Control topParent = FindForm();
                     topParent.Move -= TopParent_Move;
                     topParent.Move += TopParent_Move;
                     Parent.Move -= Parent_Move;
@@ -267,7 +263,6 @@ namespace CustomControls
             t.Interval = 100;
             t.Tick += (s, e) =>
             {
-                OriginalColors = new Color[] { mBackColor, mForeColor, mBorderColor };
                 p.Invalidate();
                 elapsedTime += t.Interval;
                 if (elapsedTime > totalTime)
@@ -278,107 +273,52 @@ namespace CustomControls
 
         private void CustomPanel_Paint(object? sender, PaintEventArgs e)
         {
-            // Update Colors
-            OriginalColors = new Color[] { BackColor, ForeColor, BorderColor };
-
             if (ApplicationIdle == false)
                 return;
 
             Rectangle rect = new(0, 0, ClientRectangle.Width, ClientRectangle.Height);
 
-            if (sender is Panel panel)
+            if (sender is Panel)
             {
                 if (DesignMode)
-                {
                     BorderStyle = BorderStyle.FixedSingle;
-                    //rect = new(rect.X + 1, rect.Y + 1, rect.Width - 2, rect.Height - 2); // Make border noticeable in DesignMode.
-                    BackColor = mBackColor;
-                    ForeColor = mForeColor;
-                    BorderColor = mBorderColor;
-                }
                 else
-                {
                     BorderStyle = BorderStyle.None;
 
-                    if (OriginalColors == null)
-                        return;
+                Color backColor = GetBackColor();
+                Color foreColor = GetForeColor();
+                Color borderColor = GetBorderColor();
 
-                    if (panel.Enabled)
-                    {
-                        BackColor = OriginalColors[0];
-                        ForeColor = OriginalColors[1];
-                        BorderColor = OriginalColors[2];
-                    }
-                    else
-                    {
-                        // Disabled Colors
-                        if (BackColor.DarkOrLight() == "Dark")
-                            BackColorDisabled = OriginalColors[0].ChangeBrightness(0.3f);
-                        else if (BackColor.DarkOrLight() == "Light")
-                            BackColorDisabled = OriginalColors[0].ChangeBrightness(-0.3f);
-
-                        if (ForeColor.DarkOrLight() == "Dark")
-                            ForeColorDisabled = OriginalColors[1].ChangeBrightness(0.2f);
-                        else if (ForeColor.DarkOrLight() == "Light")
-                            ForeColorDisabled = OriginalColors[1].ChangeBrightness(-0.2f);
-
-                        if (BorderColor.DarkOrLight() == "Dark")
-                            BorderColorDisabled = OriginalColors[2].ChangeBrightness(0.3f);
-                        else if (BorderColor.DarkOrLight() == "Light")
-                            BorderColorDisabled = OriginalColors[2].ChangeBrightness(-0.3f);
-                    }
-                }
-
-                Color backColor;
-                Color foreColor;
-                Color borderColor;
-
-                if (panel.Enabled)
-                {
-                    backColor = BackColor;
-                    foreColor = ForeColor;
-                    borderColor = BorderColor;
-                }
-                else
-                {
-                    backColor = BackColorDisabled;
-                    foreColor = ForeColorDisabled;
-                    borderColor = BorderColorDisabled;
-                }
                 ForeColor = foreColor;
-
                 innerPanel.BackColor = backColor;
                 innerPanel.ForeColor = foreColor;
 
-                if (DesignMode || !DesignMode)
+                // Fill Background
+                e.Graphics.Clear(backColor);
+
+                // Draw Border
+                //ControlPaint.DrawBorder(e.Graphics, rect, borderColor, ButtonBorderStyle);
+
+                if (Border == BorderStyle.FixedSingle)
+                    ControlPaint.DrawBorder(e.Graphics, rect, borderColor, ButtonBorderStyle);
+                else if (Border == BorderStyle.Fixed3D)
                 {
-                    // Fill Background
-                    e.Graphics.Clear(backColor);
+                    Color secondBorderColor;
+                    if (borderColor.DarkOrLight() == "Dark")
+                        secondBorderColor = borderColor.ChangeBrightness(0.5f);
+                    else
+                        secondBorderColor = borderColor.ChangeBrightness(-0.5f);
 
-                    // Draw Border
-                    //ControlPaint.DrawBorder(e.Graphics, rect, borderColor, ButtonBorderStyle);
+                    Rectangle rect3DBorder;
 
-                    if (Border == BorderStyle.FixedSingle)
-                        ControlPaint.DrawBorder(e.Graphics, rect, borderColor, ButtonBorderStyle);
-                    else if (Border == BorderStyle.Fixed3D)
-                    {
-                        Color secondBorderColor;
-                        if (borderColor.DarkOrLight() == "Dark")
-                            secondBorderColor = borderColor.ChangeBrightness(0.5f);
-                        else
-                            secondBorderColor = borderColor.ChangeBrightness(-0.5f);
+                    rect3DBorder = new(rect.X, rect.Y, rect.Width, rect.Height);
+                    ControlPaint.DrawBorder(e.Graphics, rect3DBorder, secondBorderColor, ButtonBorderStyle);
 
-                        Rectangle rect3DBorder;
+                    rect3DBorder = new(rect.X + 1, rect.Y + 1, rect.Width - 1, rect.Height - 1);
+                    ControlPaint.DrawBorder(e.Graphics, rect3DBorder, secondBorderColor, ButtonBorderStyle);
 
-                        rect3DBorder = new(rect.X, rect.Y, rect.Width, rect.Height);
-                        ControlPaint.DrawBorder(e.Graphics, rect3DBorder, secondBorderColor, ButtonBorderStyle);
-
-                        rect3DBorder = new(rect.X + 1, rect.Y + 1, rect.Width - 1, rect.Height - 1);
-                        ControlPaint.DrawBorder(e.Graphics, rect3DBorder, secondBorderColor, ButtonBorderStyle);
-
-                        rect3DBorder = new(rect.X, rect.Y, rect.Width - 1, rect.Height - 1);
-                        ControlPaint.DrawBorder(e.Graphics, rect3DBorder, borderColor, ButtonBorderStyle);
-                    }
+                    rect3DBorder = new(rect.X, rect.Y, rect.Width - 1, rect.Height - 1);
+                    ControlPaint.DrawBorder(e.Graphics, rect3DBorder, borderColor, ButtonBorderStyle);
                 }
             }
         }
@@ -511,5 +451,45 @@ namespace CustomControls
             var p = sender as Panel;
             p.Invalidate();
         }
+
+        private Color GetBackColor()
+        {
+            if (Enabled)
+                return BackColor;
+            else
+            {
+                if (BackColor.DarkOrLight() == "Dark")
+                    return BackColor.ChangeBrightness(0.3f);
+                else
+                    return BackColor.ChangeBrightness(-0.3f);
+            }
+        }
+
+        private Color GetForeColor()
+        {
+            if (Enabled)
+                return ForeColor;
+            else
+            {
+                if (ForeColor.DarkOrLight() == "Dark")
+                    return ForeColor.ChangeBrightness(0.2f);
+                else
+                    return ForeColor.ChangeBrightness(-0.2f);
+            }
+        }
+
+        private Color GetBorderColor()
+        {
+            if (Enabled)
+                return BorderColor;
+            else
+            {
+                if (BorderColor.DarkOrLight() == "Dark")
+                    return BorderColor.ChangeBrightness(0.3f);
+                else
+                    return BorderColor.ChangeBrightness(-0.3f);
+            }
+        }
+
     }
 }

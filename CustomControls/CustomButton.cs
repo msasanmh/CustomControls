@@ -134,7 +134,7 @@ namespace CustomControls
             {
                 if (once)
                 {
-                    Control topParent = Tools.Controllers.GetTopParent(this);
+                    Control topParent = FindForm();
                     topParent.Move -= TopParent_Move;
                     topParent.Move += TopParent_Move;
                     Parent.Move -= Parent_Move;

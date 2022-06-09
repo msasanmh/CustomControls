@@ -40,7 +40,7 @@ namespace CustomControls
             }
         }
 
-        private Color mBorderColor = Color.Red;
+        private Color mBorderColor = Color.Blue;
         [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
         [Editor(typeof(WindowsFormsComponentEditor), typeof(Color))]
         [Category("Appearance"), Description("Border Color")]
@@ -95,7 +95,7 @@ namespace CustomControls
             {
                 if (once)
                 {
-                    Control topParent = Tools.Controllers.GetTopParent(this);
+                    Control topParent = FindForm();
                     topParent.Move -= TopParent_Move;
                     topParent.Move += TopParent_Move;
                     Parent.Move -= Parent_Move;
@@ -163,7 +163,7 @@ namespace CustomControls
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
-
+            
             Rectangle rect = ClientRectangle;
             Color borderColor = GetBorderColor();
 
@@ -339,9 +339,9 @@ namespace CustomControls
             else
             {
                 if (ForeColor.DarkOrLight() == "Dark")
-                    return ForeColor.ChangeBrightness(0.3f);
+                    return ForeColor.ChangeBrightness(0.2f);
                 else
-                    return ForeColor.ChangeBrightness(-0.3f);
+                    return ForeColor.ChangeBrightness(-0.2f);
             }
         }
 

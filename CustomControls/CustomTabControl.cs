@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -28,6 +29,10 @@ namespace CustomControls
                 }
             }
         }
+
+        [Browsable(false)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public new TabAppearance Appearance { get; set; }
 
         private static Color mBackColor = Color.DimGray;
         [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
@@ -113,6 +118,27 @@ namespace CustomControls
             }
         }
 
+        private static bool mHideTabHeader = false;
+        [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
+        [Category("Appearance"), Description("Hide Tab Header")]
+        public bool HideTabHeader
+        {
+            get { return mHideTabHeader; }
+            set
+            {
+                if (mHideTabHeader != value)
+                {
+                    mHideTabHeader = value;
+                    HideTabHeaderChanged?.Invoke(this, EventArgs.Empty);
+                    Invalidate();
+                }
+            }
+        }
+
+        [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
+        [Category("Property Changed"), Description("HideTabHeader Changed Event")]
+        public event EventHandler? HideTabHeaderChanged;
+
         private static bool ControlEnabled = true;
         private bool once = true;
 
@@ -125,10 +151,14 @@ namespace CustomControls
             SetStyle(ControlStyles.Opaque, true);
 
             ControlEnabled = Enabled;
+            Appearance = TabAppearance.Normal;
 
+            HideTabHeaderChanged += CustomTabControl_HideTabHeaderChanged;
+            
             ControlAdded += CustomTabControl_ControlAdded;
             ControlRemoved += CustomTabControl_ControlRemoved;
             Application.Idle += Application_Idle;
+            HandleCreated += CustomTabControl_HandleCreated;
             LocationChanged += CustomTabControl_LocationChanged;
             Move += CustomTabControl_Move;
             SizeChanged += CustomTabControl_SizeChanged;
@@ -137,11 +167,28 @@ namespace CustomControls
             Paint += CustomTabControl_Paint;
         }
 
+        private void CustomTabControl_HideTabHeaderChanged(object? sender, EventArgs e)
+        {
+            if (mHideTabHeader)
+            {
+                Appearance = TabAppearance.Buttons;
+                ItemSize = new(0, 1);
+                SizeMode = TabSizeMode.Fixed;
+            }
+            else
+            {
+                Appearance = TabAppearance.Normal;
+                ItemSize = Size.Empty;
+                SizeMode = TabSizeMode.FillToRight;
+            }
+        }
+
         private void SearchTabPages()
         {
             for (int n = 0; n < TabPages.Count; n++)
             {
-                var tabPage = TabPages[n];
+                TabPage tabPage = TabPages[n];
+                tabPage.Tag = n;
                 tabPage.Paint -= TabPage_Paint;
                 tabPage.Paint += TabPage_Paint;
             }
@@ -169,7 +216,7 @@ namespace CustomControls
                 {
                     SearchTabPages();
 
-                    Control topParent = Tools.Controllers.GetTopParent(this);
+                    Control topParent = FindForm();
                     topParent.Move -= TopParent_Move;
                     topParent.Move += TopParent_Move;
                     Parent.Move -= Parent_Move;
@@ -179,11 +226,11 @@ namespace CustomControls
                 }
             }
         }
-
+        
         private void TabPage_Paint(object? sender, PaintEventArgs e)
         {
-            var tabPage = sender as TabPage;
-
+            TabPage tabPage = sender as TabPage;
+            
             Color tabPageColor;
             if (Enabled)
                 tabPageColor = tabPage.BackColor;
@@ -197,6 +244,16 @@ namespace CustomControls
 
             using SolidBrush sb = new(tabPageColor);
             e.Graphics.FillRectangle(sb, e.ClipRectangle);
+
+            Control tabControl = tabPage.Parent;
+            tabControl.Tag = tabPage.Tag;
+            tabControl.Paint -= TabControl_Paint;
+            tabControl.Paint += TabControl_Paint;
+        }
+
+        private void TabControl_Paint(object? sender, PaintEventArgs e)
+        {
+            // Selected Tab Can Be Paint Also Here
         }
 
         private void TopParent_Move(object? sender, EventArgs e)
@@ -205,6 +262,11 @@ namespace CustomControls
         }
 
         private void Parent_Move(object? sender, EventArgs e)
+        {
+            Invalidate();
+        }
+
+        private void CustomTabControl_HandleCreated(object? sender, EventArgs e)
         {
             Invalidate();
         }
@@ -230,8 +292,6 @@ namespace CustomControls
         private void CustomTabControl_EnabledChanged(object? sender, EventArgs e)
         {
             ControlEnabled = Enabled;
-            if (sender is TabControl tabControl)
-                tabControl.Invalidate();
         }
 
         private void CustomTabControl_Invalidated(object? sender, InvalidateEventArgs e)
@@ -242,341 +302,175 @@ namespace CustomControls
 
         private void CustomTabControl_Paint(object? sender, PaintEventArgs e)
         {
-            new TabControlRenderer(sender as TabControl, e).Paint();
+            if (sender is TabControl tc)
+            {
+                Color backColor = GetBackColor();
+                Color foreColor = GetForeColor();
+                Color borderColor = GetBorderColor();
+
+                // Paint Background
+                e.Graphics.Clear(backColor);
+
+                for (int n = 0; n < TabPages.Count; n++)
+                {
+                    TabPage tabPage = TabPages[n];
+                    TabPage selectedTabPage = TabPages[tc.SelectedIndex];
+                    int index = n;
+                    Rectangle rectTab = GetTabRect(index);
+                    using Pen pen = new(borderColor);
+                    using SolidBrush brush = new(backColor);
+                    
+                    // Mouse Position
+                    Point mP = tc.PointToClient(MousePosition);
+
+                    // Selected tab Rectangle
+                    Rectangle rectSelectedTab = GetTabRect(tc.SelectedIndex);
+                    if (RightToLeft == RightToLeft.No || RightToLeft == RightToLeft.Yes && !RightToLeftLayout)
+                        rectSelectedTab = Rectangle.FromLTRB(rectSelectedTab.Left - 2, rectSelectedTab.Top - 2, rectSelectedTab.Right + 1, rectSelectedTab.Bottom);
+                    else if (RightToLeft == RightToLeft.Yes && RightToLeftLayout)
+                        rectSelectedTab = Rectangle.FromLTRB(rectSelectedTab.Left - 1, rectSelectedTab.Top - 2, rectSelectedTab.Right, rectSelectedTab.Bottom);
+
+                    if (!mHideTabHeader)
+                    {
+                        // Paint Non-Selected Tab
+                        if (tc.SelectedIndex != n)
+                        {
+                            e.Graphics.FillRectangle(brush, rectTab);
+
+                            if (!DesignMode && Enabled && rectTab.Contains(mP))
+                            {
+                                Color colorHover;
+                                if (backColor.DarkOrLight() == "Dark")
+                                    colorHover = backColor.ChangeBrightness(0.2f);
+                                else
+                                    colorHover = backColor.ChangeBrightness(-0.2f);
+                                using SolidBrush brushHover = new(colorHover);
+                                e.Graphics.FillRectangle(brushHover, rectTab);
+                            }
+
+                            int tabImageIndex = tabPage.ImageIndex;
+                            string tabImageKey = tabPage.ImageKey;
+                            
+                            if (tabImageIndex != -1 && tc.ImageList != null)
+                            {
+                                Image tabImage = tc.ImageList.Images[tabImageIndex];
+                                PaintImageText(e.Graphics, tc, tabPage, rectTab, tabImage, Font, foreColor);
+                            }
+                            else if (tabImageKey != null && tc.ImageList != null)
+                            {
+                                Image tabImage = tc.ImageList.Images[tabImageKey];
+                                PaintImageText(e.Graphics, tc, tabPage, rectTab, tabImage, Font, foreColor);
+                            }
+                            else
+                            {
+                                TextRenderer.DrawText(e.Graphics, tabPage.Text, Font, rectTab, foreColor);
+                            }
+
+                            e.Graphics.DrawRectangle(pen, rectTab);
+                        }
+
+                        // Paint Selected Tab
+                        using SolidBrush brushST = new(backColor.ChangeBrightness(-0.3f));
+                        e.Graphics.FillRectangle(brushST, rectSelectedTab);
+
+                        int selectedTabImageIndex = selectedTabPage.ImageIndex;
+                        string selectedTabImageKey = selectedTabPage.ImageKey;
+
+                        if (selectedTabImageIndex != -1 && tc.ImageList != null)
+                        {
+                            Image tabImage = tc.ImageList.Images[selectedTabImageIndex];
+                            PaintImageText(e.Graphics, tc, selectedTabPage, rectSelectedTab, tabImage, Font, foreColor);
+                        }
+                        else if (selectedTabImageKey != null && tc.ImageList != null)
+                        {
+                            Image tabImage = tc.ImageList.Images[selectedTabImageKey];
+                            PaintImageText(e.Graphics, tc, selectedTabPage, rectSelectedTab, tabImage, Font, foreColor);
+                        }
+                        else
+                        {
+                            TextRenderer.DrawText(e.Graphics, selectedTabPage.Text, Font, rectSelectedTab, foreColor);
+                        }
+
+                        e.Graphics.DrawRectangle(pen, rectSelectedTab);
+
+                        // Paint Main Control Border
+                        Rectangle rectPage = Rectangle.FromLTRB(ClientRectangle.Left, rectSelectedTab.Bottom, ClientRectangle.Right, ClientRectangle.Bottom);
+                        if (RightToLeft == RightToLeft.Yes && RightToLeftLayout)
+                            rectPage = Rectangle.FromLTRB(ClientRectangle.Left, rectSelectedTab.Bottom, ClientRectangle.Right - 1, ClientRectangle.Bottom);
+                        ControlPaint.DrawBorder(e.Graphics, rectPage, borderColor, ButtonBorderStyle.Solid);
+
+                        // to overlap selected tab bottom line
+                        using Pen penLine = new(backColor.ChangeBrightness(-0.3f));
+                        e.Graphics.DrawLine(penLine, rectSelectedTab.Left + 1, rectSelectedTab.Bottom, rectSelectedTab.Right - 1, rectSelectedTab.Bottom);
+                    }
+                    else
+                    {
+                        // Paint Main Control Border
+                        ControlPaint.DrawBorder(e.Graphics, ClientRectangle, borderColor, ButtonBorderStyle.Solid);
+                    }
+                }
+            }
         }
 
-        private class TabControlRenderer
+        private static void PaintImageText(Graphics graphics, TabControl tc, TabPage tabPage, Rectangle rectTab, Image? tabImage, Font font, Color foreColor)
         {
-            private readonly Point mMouseCursor;
-            private readonly Graphics mGraphics;
-            private readonly Rectangle mClipRectangle;
-            private readonly int mSelectedIndex;
-            private readonly int mTabCount;
-            private readonly Size mImageSize;
-            private readonly Font mFont;
-            private readonly bool mEnabled;
-            private readonly Image[]? mTabImages;
-            private readonly Rectangle[]? mTabRects;
-            private readonly string[]? mTabTexts;
-            private readonly Size mSize;
-            private readonly bool mFailed;
-
-            private static readonly int mImagePadding = 6;
-            private static readonly int mSelectedTabPadding = 2;
-
-            public TabControlRenderer(TabControl? tabs, PaintEventArgs e)
+            if (mHideTabHeader)
+                return;
+            if (tabImage != null)
             {
-                mMouseCursor = tabs.PointToClient(Cursor.Position);
-                mGraphics = e.Graphics;
-                mClipRectangle = e.ClipRectangle;
-                mSize = tabs.Size;
-                mSelectedIndex = tabs.SelectedIndex;
-                mTabCount = tabs.TabCount;
-                mFont = tabs.Font;
-                mImageSize = tabs.ImageList?.ImageSize ?? Size.Empty;
-                mEnabled = tabs.Enabled;
-
-                try
-                {
-                    mTabTexts = new string[mTabCount];
-                    for (int a = 0; a < mTabCount; a++)
-                    {
-                        string text = tabs.TabPages[a].Text;
-                        if (text != null)
-                            mTabTexts[a] = text;
-                    }
-
-                    mTabImages = new Image[mTabCount];
-                    for (int a = 0; a < mTabCount; a++)
-                    {
-                        Image image = GetTabImage(tabs, a);
-                        if (image != null)
-                            mTabImages[a] = image;
-                    }
-
-                    mTabRects = new Rectangle[mTabCount];
-                    for (int a = 0; a < mTabCount; a++)
-                    {
-                        Rectangle rect = tabs.GetTabRect(a);
-                        mTabRects[a] = rect;
-                    }
-                }
-                catch (ArgumentOutOfRangeException)
-                {
-                    mFailed = true;
-                }
+                Rectangle rectImage = new(rectTab.X + tc.Padding.X, rectTab.Y + tc.Padding.Y, tabImage.Width, tabImage.Height);
+                rectImage.Location = new(rectImage.X, rectTab.Y + (rectTab.Height - rectImage.Height) / 2);
+                graphics.DrawImage(tabImage, rectImage);
+                Rectangle rectText = new(rectTab.X + rectImage.Width, rectTab.Y, rectTab.Width - rectImage.Width, rectTab.Height);
+                TextRenderer.DrawText(graphics, tabPage.Text, font, rectText, foreColor);
             }
-
-            public void Paint()
-            {
-                if (mFailed)
-                    return;
-
-                using Brush sb = GetBackgroundBrush();
-                mGraphics.FillRectangle(sb, mClipRectangle);
-
-                RenderSelectedPageBackground();
-
-                IEnumerable<int> pageIndices;
-                if (mSelectedIndex >= 0 && mSelectedIndex < mTabCount)
-                {
-                    // Render tabs in pyramid order with selected on top
-                    pageIndices = Enumerable.Range(0, mSelectedIndex)
-                        .Concat(Enumerable.Range(mSelectedIndex, mTabCount - mSelectedIndex).Reverse());
-                }
-                else
-                {
-                    pageIndices = Enumerable.Range(0, mTabCount);
-                }
-
-                for (int a = 0; a < pageIndices.Count(); a++)
-                {
-                    int index = pageIndices.ToList()[a];
-                    RenderTabBackground(index);
-                    RenderTabImage(index);
-                    RenderTabText(index, mTabImages[index] != null);
-                }
-            }
-
-            private static Image? GetTabImage(TabControl tabs, int index)
-            {
-                var images = tabs.ImageList?.Images;
-                if (images is null)
-                    return null;
-
-                var page = tabs.TabPages[index];
-                if (!string.IsNullOrEmpty(page.ImageKey))
-                {
-                    return images[page.ImageKey];
-                }
-
-                if (page.ImageIndex >= 0 && page.ImageIndex < images.Count)
-                {
-                    return images[page.ImageIndex];
-                }
-
-                return null;
-            }
-
-            private void RenderSelectedPageBackground()
-            {
-                if (mSelectedIndex < 0 || mSelectedIndex >= mTabCount)
-                    return;
-
-                Rectangle tabRect = mTabRects[mSelectedIndex];
-                Rectangle pageRect = Rectangle.FromLTRB(0, tabRect.Bottom, mSize.Width - 1, mSize.Height - 1);
-
-                if (!mClipRectangle.IntersectsWith(pageRect))
-                    return;
-
-                using Brush sb = GetBackgroundBrush();
-                mGraphics.FillRectangle(sb, pageRect);
-
-                using Pen borderPen = GetBorderPen();
-                mGraphics.DrawRectangle(borderPen, pageRect);
-            }
-
-            private void RenderTabBackground(int index)
-            {
-                Rectangle outerRect = GetOuterTabRect(index);
-                using Brush sb = GetTabBackgroundBrush(index);
-                mGraphics.FillRectangle(sb, outerRect);
-
-                var points = new List<Point>(4);
-                if (index <= mSelectedIndex)
-                {
-                    points.Add(new Point(outerRect.Left, outerRect.Bottom - 1));
-                }
-
-                points.Add(new Point(outerRect.Left, outerRect.Top));
-                points.Add(new Point(outerRect.Right - 1, outerRect.Top));
-
-                if (index >= mSelectedIndex)
-                {
-                    points.Add(new Point(outerRect.Right - 1, outerRect.Bottom - 1));
-                }
-
-                using Pen borderPen = GetBorderPen();
-                mGraphics.DrawLines(borderPen, points.ToArray());
-            }
-
-            private void RenderTabImage(int index)
-            {
-                Image image = mTabImages[index];
-                if (image is null)
-                    return;
-
-                Rectangle imgRect = GetTabImageRect(index);
-                mGraphics.DrawImage(image, imgRect);
-            }
-
-            private void RenderTabText(int index, bool hasImage)
-            {
-                if (string.IsNullOrEmpty(mTabTexts[index]))
-                    return;
-
-                Rectangle textRect = GetTabTextRect(index, hasImage);
-
-                const TextFormatFlags format =
-                    TextFormatFlags.NoClipping |
-                    TextFormatFlags.NoPrefix |
-                    TextFormatFlags.VerticalCenter |
-                    TextFormatFlags.HorizontalCenter;
-
-                Color textPen = GetTextColor();
-
-                Color foreColorUnfocused;
-                if (textPen.DarkOrLight() == "Dark")
-                    foreColorUnfocused = textPen.ChangeBrightness(0.2f);
-                else
-                    foreColorUnfocused = textPen.ChangeBrightness(-0.2f);
-
-                Color textColor = mEnabled ? textPen : foreColorUnfocused;
-
-                TextRenderer.DrawText(mGraphics, mTabTexts[index], mFont, textRect, textColor, format);
-            }
-
-            private Rectangle GetOuterTabRect(int index)
-            {
-                Rectangle innerRect = mTabRects[index];
-
-                if (index == mSelectedIndex)
-                {
-                    return Rectangle.FromLTRB(
-                        innerRect.Left - mSelectedTabPadding,
-                        innerRect.Top - mSelectedTabPadding,
-                        innerRect.Right + mSelectedTabPadding,
-                        innerRect.Bottom + 1); // +1 to overlap tabs bottom line
-                }
-
-                return Rectangle.FromLTRB(innerRect.Left, innerRect.Top + 1, innerRect.Right, innerRect.Bottom);
-            }
-
-            private Rectangle GetTabImageRect(int index)
-            {
-                Rectangle innerRect = mTabRects[index];
-                int imgHeight = mImageSize.Height;
-                Rectangle imgRect = new(new Point(innerRect.X + mImagePadding, innerRect.Y + ((innerRect.Height - imgHeight) / 2)), mImageSize);
-
-                if (index == mSelectedIndex)
-                {
-                    imgRect.Offset(0, -mSelectedTabPadding);
-                }
-
-                return imgRect;
-            }
-
-            private Rectangle GetTabTextRect(int index, bool hasImage)
-            {
-                Rectangle innerRect = mTabRects[index];
-                Rectangle textRect;
-                if (hasImage)
-                {
-                    int deltaWidth = mImageSize.Width + mImagePadding;
-                    textRect = new Rectangle(innerRect.X + deltaWidth, innerRect.Y, innerRect.Width - deltaWidth, innerRect.Height);
-                }
-                else
-                {
-                    textRect = innerRect;
-                }
-
-                if (index == mSelectedIndex)
-                {
-                    textRect.Offset(0, -mSelectedTabPadding);
-                }
-
-                return textRect;
-            }
-
-            private Brush GetBackgroundBrush()
-            {
-                if (ControlEnabled)
-                    return new SolidBrush(mBackColor);
-                else
-                {
-                    Color disabledBackColor;
-                    if (mBackColor.DarkOrLight() == "Dark")
-                        disabledBackColor = mBackColor.ChangeBrightness(0.3f);
-                    else
-                        disabledBackColor = mBackColor.ChangeBrightness(-0.3f);
-                    return new SolidBrush(disabledBackColor);
-                }
-            }
-
-            private Brush GetTabBackgroundBrush(int index)
-            {
-                if (index == mSelectedIndex)
-                {
-                    if (ControlEnabled)
-                        return new SolidBrush(mTabBackColor);
-                    else
-                    {
-                        Color disabledTabBackColor;
-                        if (mTabBackColor.DarkOrLight() == "Dark")
-                            disabledTabBackColor = mTabBackColor.ChangeBrightness(0.2f);
-                        else
-                            disabledTabBackColor = mTabBackColor.ChangeBrightness(-0.2f);
-                        return new SolidBrush(disabledTabBackColor);
-                    }
-                }
-                else
-                {
-                    if (ControlEnabled)
-                    {
-                        bool isHighlighted = mTabRects[index].Contains(mMouseCursor);
-
-                        Color highlightedTabBackColor;
-                        if (mTabBackColor.DarkOrLight() == "Dark")
-                            highlightedTabBackColor = mTabBackColor.ChangeBrightness(0.2f);
-                        else
-                            highlightedTabBackColor = mTabBackColor.ChangeBrightness(-0.2f);
-
-                        return isHighlighted ? new SolidBrush(highlightedTabBackColor) : new SolidBrush(mBackColor);
-                    }
-                    else
-                    {
-                        Color disabledBackColor;
-                        if (mBackColor.DarkOrLight() == "Dark")
-                            disabledBackColor = mBackColor.ChangeBrightness(0.3f);
-                        else
-                            disabledBackColor = mBackColor.ChangeBrightness(-0.3f);
-                        return new SolidBrush(disabledBackColor);
-                    }
-                }
-            }
-
-            private static Color GetTextColor()
-            {
-                if (ControlEnabled)
-                    return mForeColor;
-                else
-                {
-                    Color disabledForeColor;
-                    if (mForeColor.DarkOrLight() == "Dark")
-                        disabledForeColor = mForeColor.ChangeBrightness(0.2f);
-                    else
-                        disabledForeColor = mForeColor.ChangeBrightness(-0.2f);
-                    return disabledForeColor;
-                }
-            }
-
-            private static Pen GetBorderPen()
-            {
-                if (ControlEnabled)
-                    return new Pen(mBorderColor, mBorderThickness);
-                else
-                {
-                    Color disabledBorder;
-                    if (mBorderColor.DarkOrLight() == "Dark")
-                        disabledBorder = mBorderColor.ChangeBrightness(0.3f);
-                    else
-                        disabledBorder = mBorderColor.ChangeBrightness(-0.3f);
-                    return new Pen(disabledBorder, mBorderThickness);
-                }
-            }
-            
+            else
+                TextRenderer.DrawText(graphics, tabPage.Text, font, rectTab, foreColor);
         }
 
-    }
+        private static Color GetBackColor()
+        {
+            if (ControlEnabled)
+                return mBackColor;
+            else
+            {
+                Color disabledBackColor;
+                if (mBackColor.DarkOrLight() == "Dark")
+                    disabledBackColor = mBackColor.ChangeBrightness(0.3f);
+                else
+                    disabledBackColor = mBackColor.ChangeBrightness(-0.3f);
+                return disabledBackColor;
+            }
+        }
 
+        private static Color GetForeColor()
+        {
+            if (ControlEnabled)
+                return mForeColor;
+            else
+            {
+                Color disabledForeColor;
+                if (mForeColor.DarkOrLight() == "Dark")
+                    disabledForeColor = mForeColor.ChangeBrightness(0.2f);
+                else
+                    disabledForeColor = mForeColor.ChangeBrightness(-0.2f);
+                return disabledForeColor;
+            }
+        }
+
+        private static Color GetBorderColor()
+        {
+            if (ControlEnabled)
+                return mBorderColor;
+            else
+            {
+                Color disabledBorderColor;
+                if (mBorderColor.DarkOrLight() == "Dark")
+                    disabledBorderColor = mBorderColor.ChangeBrightness(0.3f);
+                else
+                    disabledBorderColor = mBorderColor.ChangeBrightness(-0.3f);
+                return disabledBorderColor;
+            }
+        }
+    }
 }

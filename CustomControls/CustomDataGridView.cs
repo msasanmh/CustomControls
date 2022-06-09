@@ -1,6 +1,7 @@
 ﻿using MsmhTools;
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
 using System.Windows.Forms.Design;
@@ -157,9 +158,8 @@ namespace CustomControls
             }
         }
 
-        //private static Color[]? OriginalColors;
         private static Color BackColorDarker { get; set; }
-        private static Color SelectionUnfocused { get; set; }
+        public Color SelectionUnfocused { get; private set; }
 
         private static bool ApplicationIdle = false;
         private bool once = true;
@@ -177,8 +177,10 @@ namespace CustomControls
             ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
             
             ColumnHeadersBorder = true;
-
             Application.Idle += Application_Idle;
+            RowsAdded += CustomDataGridView_RowsAdded;
+            GotFocus += CustomDataGridView_GotFocus;
+            LostFocus += CustomDataGridView_LostFocus;
             HandleCreated += DataGridView_HandleCreated;
             Invalidated += CustomDataGridView_Invalidated;
             MouseEnter += CustomDataGridView_MouseEnter;
@@ -196,7 +198,7 @@ namespace CustomControls
             CellPainting += DataGridView_CellPainting;
             Paint += DataGridView_Paint;
             EditingControlShowing += CustomDataGridView_EditingControlShowing;
-
+            
             KeyDown += CustomDataGridView_KeyDown;
         }
 
@@ -207,7 +209,7 @@ namespace CustomControls
             {
                 if (once == true)
                 {
-                    Control topParent = Tools.Controllers.GetTopParent(this);
+                    Control topParent = FindForm();
                     topParent.Move -= TopParent_Move;
                     topParent.Move += TopParent_Move;
                     Parent.Move -= Parent_Move;
@@ -228,13 +230,30 @@ namespace CustomControls
             Invalidate();
         }
 
+        private void CustomDataGridView_RowsAdded(object? sender, DataGridViewRowsAddedEventArgs e)
+        {
+            if (sender is CustomDataGridView gv)
+                DataGridViewColor(gv);
+        }
+
+        private void CustomDataGridView_GotFocus(object? sender, EventArgs e)
+        {
+            if (sender is CustomDataGridView gv)
+                DataGridViewColor(gv);
+        }
+
+        private void CustomDataGridView_LostFocus(object? sender, EventArgs e)
+        {
+            if (sender is CustomDataGridView gv)
+                DataGridViewColor(gv);
+        }
+
         private void DataGridView_HandleCreated(object? sender, EventArgs e)
         {
             if (sender is null || e is null)
                 return;
             BackColorDarker = mBackColor.ChangeBrightness(-0.3f);
             SelectionUnfocused = mSelectionColor.ChangeBrightness(0.3f);
-            //OriginalColors = new Color[] { mBackColor, mForeColor, mBorderColor, mSelectionColor, mGridColor, mCheckColor, BackColorDarker, SelectionUnfocused };
             var gv = sender as DataGridView;
             DataGridViewColor(gv);
             gv.Invalidate();
@@ -331,27 +350,11 @@ namespace CustomControls
             else
                 gv.DefaultCellStyle.SelectionBackColor = SelectionUnfocused;
             gv.DefaultCellStyle.SelectionForeColor = foreColor;
-
             gv.EnableHeadersVisualStyles = false;
             if (ColumnHeadersBorder)
                 gv.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
             else
                 gv.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None;
-            
-            // Or
-            //for (int rr = 0; rr < gv.Rows.Count; rr++)
-            //{
-            //    DataGridViewRow row = gv.Rows[rr];
-            //    for (int cc = 0; cc < gv.Columns.Count; cc++)
-            //    {
-            //        DataGridViewColumn col = gv.Columns[cc];
-            //        row.Cells[col.Index].Style.BackColor = Color.Green;
-            //        // Or
-            //        gv[col.Index, row.Index].Style.BackColor = Colors.BackColor;
-            //        // Or
-            //        gv.Rows[rr].Cells[cc].Style.BackColor = Colors.BackColor;
-            //    }
-            //}
         }
         private static void DataGridView_CellClick(object? sender, DataGridViewCellEventArgs e)
         {
