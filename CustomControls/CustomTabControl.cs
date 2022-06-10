@@ -51,23 +51,6 @@ namespace CustomControls
             }
         }
 
-        private static Color mTabBackColor = Color.DodgerBlue;
-        [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
-        [Editor(typeof(WindowsFormsComponentEditor), typeof(Color))]
-        [Category("Appearance"), Description("Selected Tab Back Color")]
-        public Color TabBackColor
-        {
-            get { return mTabBackColor; }
-            set
-            {
-                if (mTabBackColor != value)
-                {
-                    mTabBackColor = value;
-                    Invalidate();
-                }
-            }
-        }
-
         private static Color mForeColor = Color.White;
         [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
         [Editor(typeof(WindowsFormsComponentEditor), typeof(Color))]
@@ -97,22 +80,6 @@ namespace CustomControls
                 if (mBorderColor != value)
                 {
                     mBorderColor = value;
-                    Invalidate();
-                }
-            }
-        }
-
-        private static int mBorderThickness = 1;
-        [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
-        [Category("Appearance"), Description("Border Thickness")]
-        public int BorderThickness
-        {
-            get { return mBorderThickness; }
-            set
-            {
-                if (mBorderThickness != value)
-                {
-                    mBorderThickness = value;
                     Invalidate();
                 }
             }
