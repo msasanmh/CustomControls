@@ -16,6 +16,10 @@ namespace CustomControls
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public new FlatButtonAppearance? FlatAppearance { get; set; }
 
+        [Browsable(false)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public new TextImageRelation? TextImageRelation { get; set; }
+
         private Color mBackColor = Color.DimGray;
         [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
         [Editor(typeof(WindowsFormsComponentEditor), typeof(Color))]
@@ -139,10 +143,16 @@ namespace CustomControls
                     topParent.Move += TopParent_Move;
                     Parent.Move -= Parent_Move;
                     Parent.Move += Parent_Move;
+                    Parent.BackColorChanged += Parent_BackColorChanged;
                     Invalidate();
                     once = false;
                 }
             }
+        }
+
+        private void Parent_BackColorChanged(object? sender, EventArgs e)
+        {
+            Invalidate();
         }
 
         private void TopParent_Move(object? sender, EventArgs e)
@@ -228,17 +238,29 @@ namespace CustomControls
                 Color foreColor = GetForeColor();
                 Color borderColor = GetBorderColor();
 
+                // Paint Background
                 if (Parent != null)
+                {
                     e.Graphics.Clear(Parent.BackColor);
+                    if (Parent.BackColor == Color.Transparent)
+                        if (Parent is TabPage tabPage)
+                        {
+                            if (tabPage.Parent is CustomTabControl customTabControl)
+                                e.Graphics.Clear(customTabControl.BackColor);
+                            else if (tabPage.Parent is TabControl tabControl)
+                                e.Graphics.Clear(tabControl.BackColor);
+                        }
+                }
+                else
+                    e.Graphics.Clear(backColor);
 
                 Rectangle rect = new(0, 0, button.ClientSize.Width - 1, button.ClientSize.Height - 1);
 
-                // Draw Button Background
+                // Paint Button Background
                 using SolidBrush sbBG = new(backColor);
-                //e.Graphics.FillRectangle(sbBG, rect);
                 e.Graphics.FillRoundedRectangle(sbBG, rect, RoundedCorners, RoundedCorners, RoundedCorners, RoundedCorners);
 
-                // Draw Hover Button Background (// MousePosition Or Cursor.Position) (Faster than rect.Contains(button.PointToClient(MousePosition)))
+                // Paint Hover Button Background (// MousePosition Or Cursor.Position) (Faster than rect.Contains(button.PointToClient(MousePosition)))
                 if (button.PointToScreen(Point.Empty).X <= MousePosition.X
                         && MousePosition.X <= (button.PointToScreen(Point.Empty).X + rect.Width)
                         && button.PointToScreen(Point.Empty).Y <= MousePosition.Y
@@ -255,7 +277,6 @@ namespace CustomControls
                                 mouseDownBackColor = backColor.ChangeBrightness(-0.2f);
 
                             using SolidBrush sbDBG = new(mouseDownBackColor);
-                            //e.Graphics.FillRectangle(sbDBG, rect);
                             e.Graphics.FillRoundedRectangle(sbDBG, rect, RoundedCorners, RoundedCorners, RoundedCorners, RoundedCorners);
                             ButtonMouseDown = false; // Fix a minor bug.
                         }
@@ -268,7 +289,6 @@ namespace CustomControls
                                 mouseHoverBackColor = BackColor.ChangeBrightness(-0.1f);
 
                             using SolidBrush sbHBG = new(mouseHoverBackColor);
-                            //e.Graphics.FillRectangle(sbHBG, rect);
                             e.Graphics.FillRoundedRectangle(sbHBG, rect, RoundedCorners, RoundedCorners, RoundedCorners, RoundedCorners);
                         }
                     }
@@ -285,7 +305,68 @@ namespace CustomControls
                     rect.Inflate(+2, +2);
                 }
 
-                // Draw Button Text
+                // Paint Image
+                if (Image != null)
+                {
+                    Rectangle rectImage = new(0, 0, Image.Width, Image.Height);
+                    int pad = 2;
+                    int top = rect.Y + pad;
+                    int bottom = rect.Y + (rect.Height - rectImage.Height) - pad;
+                    int left = rect.X + pad;
+                    int right = rect.X + (rect.Width - rectImage.Width) - pad;
+                    int centerX = rect.X + ((rect.Width - rectImage.Width) / 2);
+                    int centerY = rect.Y + ((rect.Height - rectImage.Height) / 2);
+                    if (RightToLeft == RightToLeft.No)
+                    {
+                        if (ImageAlign == ContentAlignment.BottomCenter)
+                            rectImage.Location = new(centerX, bottom);
+                        else if (ImageAlign == ContentAlignment.BottomLeft)
+                            rectImage.Location = new(left, bottom);
+                        else if (ImageAlign == ContentAlignment.BottomRight)
+                            rectImage.Location = new(right, bottom);
+                        else if (ImageAlign == ContentAlignment.MiddleCenter)
+                            rectImage.Location = new(centerX, centerY);
+                        else if (ImageAlign == ContentAlignment.MiddleLeft)
+                            rectImage.Location = new(left, centerY);
+                        else if (ImageAlign == ContentAlignment.MiddleRight)
+                            rectImage.Location = new(right, centerY);
+                        else if (ImageAlign == ContentAlignment.TopCenter)
+                            rectImage.Location = new(centerX, top);
+                        else if (ImageAlign == ContentAlignment.TopLeft)
+                            rectImage.Location = new(left, top);
+                        else if (ImageAlign == ContentAlignment.TopRight)
+                            rectImage.Location = new(right, top);
+                        else
+                            rectImage.Location = new(centerX, centerY);
+                    }
+                    else
+                    {
+                        if (ImageAlign == ContentAlignment.BottomCenter)
+                            rectImage.Location = new(centerX, bottom);
+                        else if (ImageAlign == ContentAlignment.BottomLeft)
+                            rectImage.Location = new(right, bottom);
+                        else if (ImageAlign == ContentAlignment.BottomRight)
+                            rectImage.Location = new(left, bottom);
+                        else if (ImageAlign == ContentAlignment.MiddleCenter)
+                            rectImage.Location = new(centerX, centerY);
+                        else if (ImageAlign == ContentAlignment.MiddleLeft)
+                            rectImage.Location = new(right, centerY);
+                        else if (ImageAlign == ContentAlignment.MiddleRight)
+                            rectImage.Location = new(left, centerY);
+                        else if (ImageAlign == ContentAlignment.TopCenter)
+                            rectImage.Location = new(centerX, top);
+                        else if (ImageAlign == ContentAlignment.TopLeft)
+                            rectImage.Location = new(right, top);
+                        else if (ImageAlign == ContentAlignment.TopRight)
+                            rectImage.Location = new(left, top);
+                        else
+                            rectImage.Location = new(centerX, centerY);
+                    }
+
+                    e.Graphics.DrawImage(Image, rectImage);
+                }
+
+                // Paint Button Text
                 TextFormatFlags flags;
 
                 if (RightToLeft == RightToLeft.No)
@@ -339,10 +420,9 @@ namespace CustomControls
 
                 TextRenderer.DrawText(e.Graphics, button.Text, button.Font, rect, foreColor, flags);
 
-                // Draw Button Border
-                using Pen penb = new(borderColor);
-                //e.Graphics.DrawRectangle(penb, rect);
-                e.Graphics.DrawRoundedRectangle(penb, rect, RoundedCorners, RoundedCorners, RoundedCorners, RoundedCorners);
+                // Paint Button Border
+                using Pen penB = new(borderColor);
+                e.Graphics.DrawRoundedRectangle(penB, rect, RoundedCorners, RoundedCorners, RoundedCorners, RoundedCorners);
             }
         }
 
@@ -383,87 +463,6 @@ namespace CustomControls
                 else
                     return BorderColor.ChangeBrightness(-0.3f);
             }
-        }
-
-    }
-
-    static class Extentions
-    {
-        public static void DrawRoundedRectangle(this Graphics graphics, Pen pen, Rectangle bounds, int radiusTopLeft, int radiusTopRight, int radiusBottomRight, int radiusBottomLeft)
-        {
-            GraphicsPath path;
-            path = RoundedRectangle(bounds, radiusTopLeft, radiusTopRight, radiusBottomRight, radiusBottomLeft);
-            graphics.SmoothingMode = SmoothingMode.AntiAlias;
-            graphics.DrawPath(pen, path);
-            graphics.SmoothingMode = SmoothingMode.Default;
-        }
-
-        public static void FillRoundedRectangle(this Graphics graphics, Brush brush, Rectangle bounds, int radiusTopLeft, int radiusTopRight, int radiusBottomRight, int radiusBottomLeft)
-        {
-            GraphicsPath path;
-            path = RoundedRectangle(bounds, radiusTopLeft, radiusTopRight, radiusBottomRight, radiusBottomLeft);
-            graphics.SmoothingMode = SmoothingMode.AntiAlias;
-            graphics.FillPath(brush, path);
-            graphics.SmoothingMode = SmoothingMode.Default;
-        }
-
-        private static GraphicsPath RoundedRectangle(Rectangle bounds, int radiusTopLeft, int radiusTopRight, int radiusBottomRight, int radiusBottomLeft)
-        {
-            int diameterTopLeft = radiusTopLeft * 2;
-            int diameterTopRight = radiusTopRight * 2;
-            int diameterBottomRight = radiusBottomRight * 2;
-            int diameterBottomLeft = radiusBottomLeft * 2;
-
-            Rectangle arc1 = new(bounds.Location, new Size(diameterTopLeft, diameterTopLeft));
-            Rectangle arc2 = new(bounds.Location, new Size(diameterTopRight, diameterTopRight));
-            Rectangle arc3 = new(bounds.Location, new Size(diameterBottomRight, diameterBottomRight));
-            Rectangle arc4 = new(bounds.Location, new Size(diameterBottomLeft, diameterBottomLeft));
-            GraphicsPath path = new();
-
-            // Top Left Arc  
-            if (radiusTopLeft == 0)
-            {
-                path.AddLine(arc1.Location, arc1.Location);
-            }
-            else
-            {
-                path.AddArc(arc1, 180, 90);
-            }
-            // Top Right Arc  
-            arc2.X = bounds.Right - diameterTopRight;
-            if (radiusTopRight == 0)
-            {
-                path.AddLine(arc2.Location, arc2.Location);
-            }
-            else
-            {
-                path.AddArc(arc2, 270, 90);
-            }
-            // Bottom Right Arc
-            arc3.X = bounds.Right - diameterBottomRight;
-            arc3.Y = bounds.Bottom - diameterBottomRight;
-            if (radiusBottomRight == 0)
-            {
-                path.AddLine(arc3.Location, arc3.Location);
-            }
-            else
-            {
-                path.AddArc(arc3, 0, 90);
-            }
-            // Bottom Left Arc 
-            arc4.X = bounds.Right - diameterBottomLeft;
-            arc4.Y = bounds.Bottom - diameterBottomLeft;
-            arc4.X = bounds.Left;
-            if (radiusBottomLeft == 0)
-            {
-                path.AddLine(arc4.Location, arc4.Location);
-            }
-            else
-            {
-                path.AddArc(arc4, 90, 90);
-            }
-            path.CloseFigure();
-            return path;
         }
     }
 }

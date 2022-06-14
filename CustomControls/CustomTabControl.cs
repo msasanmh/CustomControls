@@ -274,7 +274,7 @@ namespace CustomControls
                 Color backColor = GetBackColor();
                 Color foreColor = GetForeColor();
                 Color borderColor = GetBorderColor();
-
+                
                 // Paint Background
                 e.Graphics.Clear(backColor);
 
@@ -292,11 +292,14 @@ namespace CustomControls
 
                     // Selected tab Rectangle
                     Rectangle rectSelectedTab = GetTabRect(tc.SelectedIndex);
-                    if (RightToLeft == RightToLeft.No || RightToLeft == RightToLeft.Yes && !RightToLeftLayout)
-                        rectSelectedTab = Rectangle.FromLTRB(rectSelectedTab.Left - 2, rectSelectedTab.Top - 2, rectSelectedTab.Right + 1, rectSelectedTab.Bottom);
-                    else if (RightToLeft == RightToLeft.Yes && RightToLeftLayout)
-                        rectSelectedTab = Rectangle.FromLTRB(rectSelectedTab.Left - 1, rectSelectedTab.Top - 2, rectSelectedTab.Right, rectSelectedTab.Bottom);
-
+                    if (Alignment == TabAlignment.Top)
+                    {
+                        if (RightToLeft == RightToLeft.No || RightToLeft == RightToLeft.Yes && !RightToLeftLayout)
+                            rectSelectedTab = Rectangle.FromLTRB(rectSelectedTab.Left - 2, rectSelectedTab.Top - 2, rectSelectedTab.Right + 1, rectSelectedTab.Bottom);
+                        else if (RightToLeft == RightToLeft.Yes && RightToLeftLayout)
+                            rectSelectedTab = Rectangle.FromLTRB(rectSelectedTab.Left - 1, rectSelectedTab.Top - 2, rectSelectedTab.Right, rectSelectedTab.Bottom);
+                    }
+                    
                     if (!mHideTabHeader)
                     {
                         // Paint Non-Selected Tab
@@ -361,14 +364,52 @@ namespace CustomControls
                         e.Graphics.DrawRectangle(pen, rectSelectedTab);
 
                         // Paint Main Control Border
-                        Rectangle rectPage = Rectangle.FromLTRB(ClientRectangle.Left, rectSelectedTab.Bottom, ClientRectangle.Right, ClientRectangle.Bottom);
-                        if (RightToLeft == RightToLeft.Yes && RightToLeftLayout)
-                            rectPage = Rectangle.FromLTRB(ClientRectangle.Left, rectSelectedTab.Bottom, ClientRectangle.Right - 1, ClientRectangle.Bottom);
+                        Rectangle rectPage = ClientRectangle;
+                        if (Alignment == TabAlignment.Top)
+                        {
+                            rectPage = Rectangle.FromLTRB(ClientRectangle.Left, rectSelectedTab.Bottom, ClientRectangle.Right, ClientRectangle.Bottom);
+                            if (RightToLeft == RightToLeft.Yes && RightToLeftLayout)
+                                rectPage = Rectangle.FromLTRB(ClientRectangle.Left, rectSelectedTab.Bottom, ClientRectangle.Right - 1, ClientRectangle.Bottom);
+                        }
+                        else if (Alignment == TabAlignment.Bottom)
+                        {
+                            rectPage = Rectangle.FromLTRB(ClientRectangle.Left, ClientRectangle.Top, ClientRectangle.Right, rectSelectedTab.Top + 1);
+                        }
+                        else if (Alignment == TabAlignment.Left)
+                        {
+                            rectPage = Rectangle.FromLTRB(rectSelectedTab.Right, ClientRectangle.Top, ClientRectangle.Right, ClientRectangle.Bottom);
+                        }
+                        else if (Alignment == TabAlignment.Right)
+                        {
+                            rectPage = Rectangle.FromLTRB(ClientRectangle.Left, ClientRectangle.Top, rectSelectedTab.Left + 1, ClientRectangle.Bottom);
+                        }
+
                         ControlPaint.DrawBorder(e.Graphics, rectPage, borderColor, ButtonBorderStyle.Solid);
 
-                        // to overlap selected tab bottom line
-                        using Pen penLine = new(backColor.ChangeBrightness(-0.3f));
-                        e.Graphics.DrawLine(penLine, rectSelectedTab.Left + 1, rectSelectedTab.Bottom, rectSelectedTab.Right - 1, rectSelectedTab.Bottom);
+                        if (Alignment == TabAlignment.Top)
+                        {
+                            // to overlap selected tab bottom line
+                            using Pen penLine = new(backColor.ChangeBrightness(-0.3f));
+                            e.Graphics.DrawLine(penLine, rectSelectedTab.Left + 1, rectSelectedTab.Bottom, rectSelectedTab.Right - 1, rectSelectedTab.Bottom);
+                        }
+                        else if (Alignment == TabAlignment.Bottom)
+                        {
+                            // to overlap selected tab top line
+                            using Pen penLine = new(backColor.ChangeBrightness(-0.3f));
+                            e.Graphics.DrawLine(penLine, rectSelectedTab.Left + 1, rectSelectedTab.Top, rectSelectedTab.Right - 1, rectSelectedTab.Top);
+                        }
+                        else if (Alignment == TabAlignment.Left)
+                        {
+                            // to overlap selected tab right line
+                            using Pen penLine = new(backColor.ChangeBrightness(-0.3f));
+                            e.Graphics.DrawLine(penLine, rectSelectedTab.Right, rectSelectedTab.Top + 1, rectSelectedTab.Right, rectSelectedTab.Bottom - 1);
+                        }
+                        else if (Alignment == TabAlignment.Right)
+                        {
+                            // to overlap selected tab left line
+                            using Pen penLine = new(backColor.ChangeBrightness(-0.3f));
+                            e.Graphics.DrawLine(penLine, rectSelectedTab.Left, rectSelectedTab.Top + 1, rectSelectedTab.Left, rectSelectedTab.Bottom - 1);
+                        }
                     }
                     else
                     {

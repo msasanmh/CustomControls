@@ -55,7 +55,7 @@ namespace CustomControls
             }
         }
 
-        private Color mBorderColor = Color.Red;
+        private Color mBorderColor = Color.Blue;
         [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
         [Editor(typeof(WindowsFormsComponentEditor), typeof(Color))]
         [Category("Appearance"), Description("Border Color")]
@@ -72,7 +72,7 @@ namespace CustomControls
             }
         }
 
-        private Color mSelectionColor = Color.Blue;
+        private Color mSelectionColor = Color.DodgerBlue;
         [EditorBrowsable(EditorBrowsableState.Always), Browsable(true)]
         [Editor(typeof(WindowsFormsComponentEditor), typeof(Color))]
         [Category("Appearance"), Description("Selection Color")]

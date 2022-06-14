@@ -60,6 +60,83 @@ namespace MsmhTools
             };
         }
         //-----------------------------------------------------------------------------------
+        public static void DrawRoundedRectangle(this Graphics graphics, Pen pen, Rectangle bounds, int radiusTopLeft, int radiusTopRight, int radiusBottomRight, int radiusBottomLeft)
+        {
+            GraphicsPath path;
+            path = RoundedRectangle(bounds, radiusTopLeft, radiusTopRight, radiusBottomRight, radiusBottomLeft);
+            graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            graphics.DrawPath(pen, path);
+            graphics.SmoothingMode = SmoothingMode.Default;
+        }
+
+        public static void FillRoundedRectangle(this Graphics graphics, Brush brush, Rectangle bounds, int radiusTopLeft, int radiusTopRight, int radiusBottomRight, int radiusBottomLeft)
+        {
+            GraphicsPath path;
+            path = RoundedRectangle(bounds, radiusTopLeft, radiusTopRight, radiusBottomRight, radiusBottomLeft);
+            graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            graphics.FillPath(brush, path);
+            graphics.SmoothingMode = SmoothingMode.Default;
+        }
+
+        private static GraphicsPath RoundedRectangle(Rectangle bounds, int radiusTopLeft, int radiusTopRight, int radiusBottomRight, int radiusBottomLeft)
+        {
+            int diameterTopLeft = radiusTopLeft * 2;
+            int diameterTopRight = radiusTopRight * 2;
+            int diameterBottomRight = radiusBottomRight * 2;
+            int diameterBottomLeft = radiusBottomLeft * 2;
+
+            Rectangle arc1 = new(bounds.Location, new Size(diameterTopLeft, diameterTopLeft));
+            Rectangle arc2 = new(bounds.Location, new Size(diameterTopRight, diameterTopRight));
+            Rectangle arc3 = new(bounds.Location, new Size(diameterBottomRight, diameterBottomRight));
+            Rectangle arc4 = new(bounds.Location, new Size(diameterBottomLeft, diameterBottomLeft));
+            GraphicsPath path = new();
+
+            // Top Left Arc  
+            if (radiusTopLeft == 0)
+            {
+                path.AddLine(arc1.Location, arc1.Location);
+            }
+            else
+            {
+                path.AddArc(arc1, 180, 90);
+            }
+            // Top Right Arc  
+            arc2.X = bounds.Right - diameterTopRight;
+            if (radiusTopRight == 0)
+            {
+                path.AddLine(arc2.Location, arc2.Location);
+            }
+            else
+            {
+                path.AddArc(arc2, 270, 90);
+            }
+            // Bottom Right Arc
+            arc3.X = bounds.Right - diameterBottomRight;
+            arc3.Y = bounds.Bottom - diameterBottomRight;
+            if (radiusBottomRight == 0)
+            {
+                path.AddLine(arc3.Location, arc3.Location);
+            }
+            else
+            {
+                path.AddArc(arc3, 0, 90);
+            }
+            // Bottom Left Arc 
+            arc4.X = bounds.Right - diameterBottomLeft;
+            arc4.Y = bounds.Bottom - diameterBottomLeft;
+            arc4.X = bounds.Left;
+            if (radiusBottomLeft == 0)
+            {
+                path.AddLine(arc4.Location, arc4.Location);
+            }
+            else
+            {
+                path.AddArc(arc4, 90, 90);
+            }
+            path.CloseFigure();
+            return path;
+        }
+        //-----------------------------------------------------------------------------------
         /// <summary>
         /// Creates color with corrected brightness.
         /// </summary>

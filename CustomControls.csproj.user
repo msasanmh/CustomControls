@@ -19,6 +19,9 @@
     <Compile Update="CustomControls\CustomInputBox.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="CustomControls\CustomLabel.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Update="CustomControls\CustomMessageBox.cs">
       <SubType>Form</SubType>
     </Compile>
